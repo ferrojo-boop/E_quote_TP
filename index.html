@@ -862,5 +862,367 @@ document.querySelectorAll('.filter-btn').forEach(btn=>{
 // ── Init ──────────────────────────────────────────────────────────────────
 buildSidebar(); updateHero(); renderGrid();
 </script>
+
+<!-- ══════════════════════════════════════════════════════
+     CHATBOT CANVAS MEDIA MX
+══════════════════════════════════════════════════════ -->
+<style>
+  /* ── Fab ── */
+  #chatFab{
+    position:fixed;bottom:28px;right:28px;z-index:900;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--cyan);border:none;cursor:pointer;
+    box-shadow:0 4px 20px rgba(0,192,224,.45);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .2s,background .2s;
+  }
+  #chatFab:hover{transform:scale(1.1);background:var(--cyan-dark)}
+  #chatFab svg{width:26px;height:26px;color:#fff;flex-shrink:0}
+  .fab-badge{
+    position:absolute;top:-4px;right:-4px;
+    background:var(--magenta);color:#fff;
+    width:18px;height:18px;border-radius:50%;
+    font-size:10px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+    border:2px solid #fff;animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+  /* ── Window ── */
+  #chatWindow{
+    position:fixed;bottom:98px;right:28px;z-index:900;
+    width:360px;max-width:calc(100vw - 32px);
+    background:#fff;border-radius:20px;
+    box-shadow:0 12px 48px rgba(0,0,0,.2);
+    display:flex;flex-direction:column;overflow:hidden;
+    transform:scale(.85) translateY(20px);opacity:0;
+    pointer-events:none;transition:all .25s cubic-bezier(.34,1.56,.64,1);
+    max-height:calc(100vh - 140px);
+  }
+  #chatWindow.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+
+  /* header */
+  .chat-head{
+    background:var(--black);padding:14px 16px;
+    display:flex;align-items:center;gap:10px;flex-shrink:0;
+  }
+  .chat-avatar{
+    width:38px;height:38px;border-radius:50%;
+    background:var(--cyan);display:flex;align-items:center;justify-content:center;
+    font-size:18px;flex-shrink:0;
+  }
+  .chat-head-info{flex:1;min-width:0}
+  .chat-head-name{color:#fff;font-size:14px;font-weight:700}
+  .chat-head-status{color:var(--cyan);font-size:11px;display:flex;align-items:center;gap:4px}
+  .chat-head-status::before{content:'';width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0}
+  .chat-close-btn{background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:0 4px;transition:color .15s}
+  .chat-close-btn:hover{color:#fff}
+
+  /* messages */
+  .chat-msgs{
+    flex:1;overflow-y:auto;padding:16px 14px;
+    display:flex;flex-direction:column;gap:10px;
+    background:#f8f9fa;min-height:200px;
+  }
+  .msg{display:flex;gap:8px;align-items:flex-end;max-width:100%}
+  .msg.bot{flex-direction:row}
+  .msg.user{flex-direction:row-reverse}
+  .msg-avatar{
+    width:28px;height:28px;border-radius:50%;background:var(--cyan);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;flex-shrink:0;
+  }
+  .msg-bubble{
+    max-width:78%;padding:10px 13px;border-radius:16px;
+    font-size:13px;line-height:1.55;
+  }
+  .msg.bot .msg-bubble{
+    background:#fff;color:var(--text);border-radius:4px 16px 16px 16px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .msg.user .msg-bubble{
+    background:var(--cyan);color:#fff;
+    border-radius:16px 16px 4px 16px;
+  }
+  .msg-bubble a{color:var(--cyan-dark);font-weight:600}
+  .msg.user .msg-bubble a{color:#fff;text-decoration:underline}
+  .msg-time{font-size:10px;color:#bbb;margin-top:3px;text-align:right}
+  .typing-indicator{display:flex;gap:4px;padding:12px 14px;background:#fff;border-radius:4px 16px 16px 16px;width:fit-content;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .typing-indicator span{width:7px;height:7px;border-radius:50%;background:#ccc;animation:bounce .9s infinite}
+  .typing-indicator span:nth-child(2){animation-delay:.15s}
+  .typing-indicator span:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+  /* quick replies */
+  .quick-replies{
+    display:flex;flex-wrap:wrap;gap:6px;
+    padding:10px 14px 6px;background:#f8f9fa;flex-shrink:0;
+  }
+  .qr-btn{
+    padding:6px 12px;border-radius:20px;border:1.5px solid var(--cyan);
+    background:#fff;color:var(--cyan-dark);font-size:12px;font-weight:600;
+    cursor:pointer;transition:all .15s;white-space:nowrap;
+  }
+  .qr-btn:hover{background:var(--cyan);color:#fff}
+
+  /* input */
+  .chat-input-row{
+    display:flex;gap:8px;padding:12px 14px;
+    border-top:1px solid var(--border);background:#fff;flex-shrink:0;
+  }
+  #chatInput{
+    flex:1;padding:9px 13px;border:1.5px solid var(--border);
+    border-radius:10px;font-size:13px;outline:none;transition:border .2s;
+    font-family:inherit;
+  }
+  #chatInput:focus{border-color:var(--cyan)}
+  #chatSend{
+    width:38px;height:38px;border-radius:10px;
+    background:var(--cyan);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .18s;flex-shrink:0;
+  }
+  #chatSend:hover{background:var(--cyan-dark)}
+  #chatSend svg{width:16px;height:16px;color:#fff}
+</style>
+
+<!-- FAB -->
+<button id="chatFab" onclick="toggleChat()" title="Chatea con nosotros">
+  <span class="fab-badge">?</span>
+  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+  </svg>
+</button>
+
+<!-- CHAT WINDOW -->
+<div id="chatWindow">
+  <div class="chat-head">
+    <div class="chat-avatar">🎯</div>
+    <div class="chat-head-info">
+      <div class="chat-head-name">Canvas Media MX</div>
+      <div class="chat-head-status">En línea · te respondemos en &lt;24h</div>
+    </div>
+    <button class="chat-close-btn" onclick="toggleChat()">✕</button>
+  </div>
+
+  <div class="chat-msgs" id="chatMsgs"></div>
+
+  <div class="quick-replies" id="quickReplies"></div>
+
+  <div class="chat-input-row">
+    <input id="chatInput" type="text" placeholder="Escribe tu pregunta…" onkeydown="if(event.key==='Enter')sendMsg()"/>
+    <button id="chatSend" onclick="sendMsg()">
+      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// ── Knowledge base ────────────────────────────────────────────────────────
+const KB = [
+  {
+    keys:['hola','buenos','buenas','hi','hey','qué tal','saludos'],
+    answer:'¡Hola! 👋 Soy el asistente virtual de **Canvas Media MX**. Puedo ayudarte con información sobre nuestros productos, cotizaciones, tiempos de entrega y más. ¿En qué te puedo ayudar hoy?'
+  },
+  {
+    keys:['qué son','quiénes son','quienes son','qué es canvas','que es canvas','de qué tratan','a qué se dedican','empresa'],
+    answer:'Somos **Canvas Media MX**, una empresa especializada en artículos promocionales personalizados con más de **10 años de experiencia**. Ofrecemos más de **3,000 productos** — desde audífonos y gorras hasta termos, tote bags y mucho más — todos con la imagen de tu marca. 🎯\n\n*"Promocionales que CONECTAN. Historias que PERDURAN."*'
+  },
+  {
+    keys:['productos','catálogo','catalogo','qué venden','que venden','artículos','articulos','tienen'],
+    answer:'Contamos con más de **3,000 productos personalizables**, entre ellos:\n\n🎧 Audífonos y bocinas\n🧢 Gorras, hoodies y camisetas\n☕ Termos y tazas\n🎒 Mochilas, tote bags y loncheras\n📌 Pines metálicos y de resina\n🪀 Yoyos y fidget toys\n🧸 Peluches personalizados\n…y mucho más.\n\nPuedes explorar el catálogo completo aquí en el E-Store. 👆'
+  },
+  {
+    keys:['cotizar','cotización','cotizacion','precio','precios','cuánto cuesta','cuanto cuesta','costo','costos','presupuesto'],
+    answer:'Para recibir una cotización sin compromiso, solo sigue estos pasos:\n\n1️⃣ Dinos el **tipo de artículo** y la **cantidad** que necesitas\n2️⃣ Te enviamos tu cotización (válida por **7 días**)\n3️⃣ Aprobamos juntos la muestra digital\n4️⃣ ¡Producción y entrega! 🚀\n\nPuedes contactarnos por:\n📱 **WhatsApp:** [+52 56 1050 8068](https://wa.me/5215610508068)\n📧 **Email:** ventas@canvasmediamx.com\n\nTambién puedes usar el carrito de cotización de este E-Store y le damos seguimiento.'
+  },
+  {
+    keys:['mínimo','minimo','mínimos','minimos','cantidad mínima','cuántas piezas','cuantas piezas','piezas mínimas'],
+    answer:'Los mínimos de producción varían según el producto y la técnica de personalización. Lo mejor es contactarnos directamente para indicarte el mínimo específico del artículo que te interesa.\n\n📱 **WhatsApp:** [+52 56 1050 8068](https://wa.me/5215610508068)\n📧 ventas@canvasmediamx.com'
+  },
+  {
+    keys:['tiempo','tiempos','entrega','cuándo llega','cuando llega','días','dias','producción','produccion','demora','tarda'],
+    answer:'Nuestro proceso estándar es:\n\n📋 Cotización y aprobación de muestra digital\n⏱️ **7 a 10 días hábiles** de producción a partir de la confirmación de pago\n🚚 Entrega con seguimiento incluido\n\nSi necesitas tiempos express, consúltanos — ofrecemos opciones de entrega acelerada sin sacrificar calidad.'
+  },
+  {
+    keys:['personalización','personalizacion','personalizar','logo','diseño','diseño','arte','archivo','grabado','serigrafia','bordado','sublimacion'],
+    answer:'Ofrecemos múltiples técnicas de personalización según el producto:\n\n🖨️ Serigrafía\n🎨 Sublimación\n🪡 Bordado\n⚡ Grabado láser\n🖌️ Impresión digital\n\nNuestro equipo revisa tu arte y te manda una **muestra digital para aprobación** antes de producir. Sin sorpresas. ✅'
+  },
+  {
+    keys:['pago','pagos','formas de pago','cómo pago','como pago','transferencia','factura','facturación','facturacion'],
+    answer:'Aceptamos diversas formas de pago. Para detalles específicos sobre métodos y condiciones de facturación, contáctanos directamente:\n\n📱 **WhatsApp:** [+52 56 1050 8068](https://wa.me/5215610508068)\n📧 ventas@canvasmediamx.com\n\nEmitimos **factura fiscal (CFDI)** por todas tus compras.'
+  },
+  {
+    keys:['envío','envio','shipping','domicilio','domicilios','a qué estados','entrega nacional','guadalajara','monterrey'],
+    answer:'Realizamos **entregas a toda la República Mexicana** 🇲🇽. Nuestro laboratorio principal está en **Guadalajara**, y nuestras oficinas en **Benito Juárez, CDMX**.\n\nEl costo de envío varía según volumen y destino — se incluye en la cotización.'
+  },
+  {
+    keys:['contacto','contactar','hablar','ejecutivo','asesor','número','teléfono','telefono','whatsapp','email','correo'],
+    answer:'¡Estamos para ayudarte! 😊\n\n📱 **WhatsApp:** [+52 56 1050 8068](https://wa.me/5215610508068)\n📧 **Email:** ventas@canvasmediamx.com\n\n🕐 **Horarios de atención:**\nLun–Jue: 10:00 am – 6:00 pm\nViernes: 10:00 am – 3:00 pm\n\nRespondemos en un máximo de **24 horas hábiles**.'
+  },
+  {
+    keys:['horario','horarios','hora','atienden','atención','atencion','abiertos'],
+    answer:'Nuestro horario de atención es:\n\n🕐 **Lunes a Jueves:** 10:00 am – 6:00 pm\n🕑 **Viernes:** 10:00 am – 3:00 pm\n❌ Sábado y domingo: Cerrado\n\nAun fuera de horario puedes enviarnos un mensaje y te respondemos el siguiente día hábil en máximo **24 horas**.'
+  },
+  {
+    keys:['redes','instagram','facebook','linkedin','redes sociales','síguenos','siguenos'],
+    answer:'¡Síguenos y mantente al tanto de novedades! 📲\n\n📸 **Instagram:** @canvasmediamx\n👍 **Facebook:** CanvasMediaMx1\n💼 **LinkedIn:** canvas-mediamx'
+  },
+  {
+    keys:['muestra','muestras','prototipo','prueba','sample','digital'],
+    answer:'Antes de producir, siempre te enviamos una **muestra digital** (mockup) con tu logo en el producto elegido para que la apruebes. Solo arrancamos producción con tu visto bueno. ✅\n\nEsto garantiza que el resultado final sea exactamente lo que imaginaste.'
+  },
+  {
+    keys:['mundial','world cup','copa','2026','fifa','soccer','fútbol','futbol'],
+    answer:'¡Tenemos una **colección especial para el Mundial 2026**! 🏆⚽\n\nBalones de fútbol, merchandise FIFA y artículos edición especial para aprovechar la fiebre del Mundial. Pregúntanos por disponibilidad y precios.\n\n📱 [+52 56 1050 8068](https://wa.me/5215610508068)'
+  },
+  {
+    keys:['ecológico','ecologico','eco','sustentable','reciclado','verde','ambiente','sostenible'],
+    answer:'Contamos con una línea de **artículos eco-friendly y sustentables** 🌿 — perfectos para empresas que buscan alinear sus promocionales con sus valores de responsabilidad ambiental.\n\nConsúltanos por opciones de materiales reciclados, bambú y alternativas sostenibles.'
+  },
+  {
+    keys:['garantía','garantia','defecto','defectuoso','problema','queja','calidad','mala'],
+    answer:'La calidad es nuestra prioridad. Antes de entregarte, cada pedido pasa por **control de calidad**. Si existe algún defecto de producción, lo resolvemos sin costo adicional.\n\nContacta a tu ejecutivo directamente:\n📱 [+52 56 1050 8068](https://wa.me/5215610508068)\n📧 ventas@canvasmediamx.com'
+  },
+  {
+    keys:['gracias','muchas gracias','thank you','excelente','perfecto','genial'],
+    answer:'¡Con gusto! 😊 Estamos para servirte. Si tienes más preguntas o quieres arrancar tu cotización, no dudes en escribirnos.\n\n📱 **WhatsApp:** [+52 56 1050 8068](https://wa.me/5215610508068)\n\n¡Hasta pronto! 🎯'
+  },
+];
+
+const QUICK_REPLIES = [
+  {label:'💬 ¿Qué son?', q:'¿Qué es Canvas Media MX?'},
+  {label:'🛍️ Productos', q:'¿Qué productos tienen?'},
+  {label:'💰 Cotizar', q:'¿Cómo puedo cotizar?'},
+  {label:'⏱️ Tiempos', q:'¿Cuánto tarda la entrega?'},
+  {label:'📞 Contacto', q:'¿Cómo los contacto?'},
+  {label:'🎨 Personalización', q:'¿Cómo funciona la personalización?'},
+];
+
+const FALLBACK = 'Hmm, no tengo información específica sobre eso. 🤔\n\nPara una respuesta precisa, contáctanos directamente:\n\n📱 **WhatsApp:** [+52 56 1050 8068](https://wa.me/5215610508068)\n📧 ventas@canvasmediamx.com\n\n¡Nuestro equipo responde en máximo **24 horas hábiles**!';
+
+// ── State ─────────────────────────────────────────────────────────────────
+let chatOpen = false;
+let typingEl = null;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chatWindow').classList.toggle('open', chatOpen);
+  if (chatOpen && document.getElementById('chatMsgs').children.length === 0) {
+    initChat();
+  }
+  if (chatOpen) setTimeout(()=>document.getElementById('chatInput').focus(), 300);
+}
+
+function initChat() {
+  renderQuickReplies();
+  setTimeout(()=>addBotMsg('👋 ¡Hola! Soy el asistente virtual de **Canvas Media MX**.\n\n¿En qué te puedo ayudar hoy? Puedes escribir tu pregunta o elegir una opción rápida. 👇'), 300);
+}
+
+function renderQuickReplies() {
+  const qr = document.getElementById('quickReplies');
+  qr.innerHTML = QUICK_REPLIES.map(r=>
+    `<button class="qr-btn" onclick="handleQR('${r.q}')">${r.label}</button>`
+  ).join('');
+}
+
+function handleQR(q) {
+  addUserMsg(q);
+  document.getElementById('quickReplies').innerHTML = '';
+  setTimeout(()=>respond(q), 600);
+}
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addUserMsg(text);
+  document.getElementById('quickReplies').innerHTML = '';
+  setTimeout(()=>respond(text), 700);
+}
+
+function respond(text) {
+  showTyping();
+  const answer = findAnswer(text.toLowerCase());
+  setTimeout(()=>{
+    hideTyping();
+    addBotMsg(answer);
+    // show quick replies again after answer
+    setTimeout(renderQuickReplies, 400);
+  }, 900 + Math.random()*400);
+}
+
+function findAnswer(text) {
+  for (const item of KB) {
+    if (item.keys.some(k => text.includes(k))) return item.answer;
+  }
+  return FALLBACK;
+}
+
+// ── Render helpers ─────────────────────────────────────────────────────────
+function mdToHtml(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?[^\)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    .replace(/\n/g,'<br>');
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+}
+
+function addBotMsg(text) {
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.innerHTML = `
+    <div class="msg-avatar">🎯</div>
+    <div>
+      <div class="msg-bubble">${mdToHtml(text)}</div>
+      <div class="msg-time">${timeNow()}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMsg(text) {
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div>
+      <div class="msg-bubble">${text}</div>
+      <div class="msg-time">${timeNow()}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chatMsgs');
+  typingEl = document.createElement('div');
+  typingEl.className = 'msg bot';
+  typingEl.id = 'typingIndicator';
+  typingEl.innerHTML = `
+    <div class="msg-avatar">🎯</div>
+    <div class="typing-indicator"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(typingEl);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+// Close chat on Escape (complement to existing keydown listener)
+document.addEventListener('keydown', e=>{
+  if (e.key==='Escape' && chatOpen) toggleChat();
+});
+</script>
+
 </body>
 </html>
