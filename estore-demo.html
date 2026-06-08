@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Canvas Media — E-Store</title>
+  <style>
+    :root{
+      --cyan:#00C0E0;
+      --cyan-dark:#0099b8;
+      --cyan-light:#e0f8fd;
+      --magenta:#E6007E;
+      --magenta-dark:#b8005f;
+      --magenta-light:#fce4f1;
+      --yellow:#FFE800;
+      --yellow-dark:#d4be00;
+      --black:#111111;
+      --black2:#1e1e1e;
+      --white:#ffffff;
+      --bg:#f5f5f5;
+      --card:#ffffff;
+      --text:#111111;
+      --muted:#6b7280;
+      --border:#e0e0e0;
+      --radius:14px;
+      --shadow:0 2px 12px rgba(0,0,0,.08);
+      --shadow-hover:0 8px 30px rgba(0,0,0,.16);
+      --sidebar:232px;
+      --header:62px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100vh}
+
+    /* ── HEADER ── */
+    header{
+      background:var(--black);height:var(--header);padding:0 24px;
+      display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:300;
+      box-shadow:0 2px 16px rgba(0,0,0,.4);
+    }
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+    .logo-mark{
+      width:38px;height:38px;border-radius:8px;overflow:hidden;
+      display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;flex-shrink:0;
+    }
+    .logo-mark div{width:100%;height:100%}
+    .logo-c{background:var(--cyan)}
+    .logo-m{background:var(--magenta)}
+    .logo-y{background:var(--yellow)}
+    .logo-k{background:var(--black2);border:1px solid #333}
+    .logo-text{color:#fff;font-size:17px;font-weight:800;letter-spacing:.3px}
+    .logo-text span{color:var(--cyan)}
+    .header-center{flex:1;display:flex;justify-content:center}
+    .header-search{
+      position:relative;width:100%;max-width:380px;
+    }
+    .header-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#888}
+    #searchInput{
+      width:100%;padding:9px 12px 9px 38px;
+      background:#2a2a2a;border:1.5px solid #3a3a3a;border-radius:10px;
+      font-size:14px;color:#fff;outline:none;transition:border .2s;
+    }
+    #searchInput::placeholder{color:#888}
+    #searchInput:focus{border-color:var(--cyan)}
+    .header-right{display:flex;align-items:center;gap:12px}
+    .cart-toggle{
+      position:relative;background:var(--cyan);color:var(--black);
+      border:none;border-radius:10px;padding:9px 16px;
+      font-size:13px;font-weight:700;cursor:pointer;
+      display:flex;align-items:center;gap:7px;transition:background .2s;white-space:nowrap;
+    }
+    .cart-toggle:hover{background:var(--cyan-dark);color:#fff}
+    .cart-badge{
+      position:absolute;top:-7px;right:-7px;
+      background:var(--magenta);color:#fff;
+      width:20px;height:20px;border-radius:50%;
+      font-size:11px;font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      border:2px solid var(--black);
+      transition:transform .2s;
+    }
+    .cart-badge.pop{transform:scale(1.4)}
+    .cart-badge.hidden{display:none}
+
+    /* ── LAYOUT ── */
+    .layout{display:flex;flex:1;position:relative}
+
+    /* ── SIDEBAR ── */
+    aside{
+      width:var(--sidebar);flex-shrink:0;background:#fff;
+      border-right:1px solid var(--border);
+      position:sticky;top:var(--header);
+      height:calc(100vh - var(--header));overflow-y:auto;
+      padding:16px 0;
+    }
+    .sidebar-title{
+      font-size:10px;font-weight:700;color:var(--muted);
+      text-transform:uppercase;letter-spacing:1.2px;
+      padding:0 18px 10px;
+    }
+    .nav-item{
+      display:flex;align-items:center;gap:8px;
+      padding:9px 18px;cursor:pointer;
+      border-left:3px solid transparent;
+      font-size:13px;color:var(--text);font-weight:500;
+      transition:all .15s;
+    }
+    .nav-item:hover{background:#f5f5f5;color:var(--cyan-dark)}
+    .nav-item.active{
+      background:var(--cyan-light);border-left-color:var(--cyan);
+      color:var(--cyan-dark);font-weight:700;
+    }
+    .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+    .nav-count{
+      margin-left:auto;background:#f0f0f0;color:var(--muted);
+      font-size:11px;padding:2px 7px;border-radius:20px;font-weight:500;
+    }
+    .nav-item.active .nav-count{background:var(--cyan);color:var(--black);font-weight:700}
+    .nav-ph{opacity:.6;font-style:italic}
+
+    /* ── MAIN ── */
+    main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+    /* ── HERO ── */
+    .hero{
+      background:var(--black);color:#fff;
+      padding:36px 32px 30px;
+      border-bottom:3px solid var(--cyan);
+    }
+    .hero-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+    .hero-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      background:rgba(0,192,224,.15);border:1px solid var(--cyan);
+      color:var(--cyan);border-radius:50px;padding:4px 14px;
+      font-size:12px;font-weight:700;margin-bottom:10px;
+    }
+    .hero-content h1{font-size:28px;font-weight:900;line-height:1.15;margin-bottom:6px}
+    .hero-content h1 span{color:var(--cyan)}
+    .hero-content p{font-size:13px;color:#94a3b8;line-height:1.6;max-width:400px}
+    .hero-stats{display:flex;gap:24px;margin-top:18px}
+    .stat-num{font-size:22px;font-weight:800;color:var(--cyan)}
+    .stat-label{font-size:11px;color:#94a3b8;margin-top:1px}
+
+    /* ── CONTROLS ── */
+    .controls{
+      background:#fff;border-bottom:1px solid var(--border);
+      padding:12px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    }
+    .filter-group{display:flex;gap:6px;flex-wrap:wrap}
+    .filter-btn{
+      padding:6px 14px;border-radius:8px;
+      border:1.5px solid var(--border);background:#fff;
+      font-size:12px;font-weight:600;cursor:pointer;
+      transition:all .18s;color:var(--muted);
+    }
+    .filter-btn.active{background:var(--black);border-color:var(--black);color:#fff}
+    .filter-btn:hover:not(.active){border-color:var(--cyan);color:var(--cyan-dark)}
+    .results-count{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+
+    /* ── GRID ── */
+    .grid-wrap{padding:24px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+
+    /* ── CARD ── */
+    .card{
+      background:var(--card);border-radius:var(--radius);
+      box-shadow:var(--shadow);overflow:hidden;
+      transition:transform .22s,box-shadow .22s;
+      display:flex;flex-direction:column;
+    }
+    .card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
+    .card-img-wrap{
+      position:relative;overflow:hidden;
+      background:#f8f8f8;aspect-ratio:1/1;cursor:pointer;
+    }
+    .card-img-wrap img{
+      width:100%;height:100%;object-fit:contain;
+      padding:14px;transition:transform .3s;display:block;
+    }
+    .card:hover .card-img-wrap img{transform:scale(1.06)}
+    .placeholder-img{
+      width:100%;height:100%;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:8px;cursor:pointer;
+    }
+    .ph-icon{font-size:48px;opacity:.3}
+    .ph-label{font-size:11px;color:var(--muted);font-style:italic}
+
+    .badge{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+    .badge-outlet{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
+    .badge-unico{background:#fff7ed;color:#ea580c;border:1px solid #fdba74}
+
+    .card-body{padding:13px 15px 15px;flex:1;display:flex;flex-direction:column;gap:6px}
+    .card-code{font-size:10px;color:var(--muted);font-family:monospace}
+    .card-name{font-size:13px;font-weight:700;line-height:1.3;flex:1}
+    .card-variants{display:flex;gap:5px;flex-wrap:wrap}
+    .variant-dot{
+      width:18px;height:18px;border-radius:50%;cursor:pointer;
+      border:2px solid transparent;transition:all .18s;
+    }
+    .variant-dot.active{border-color:var(--magenta);transform:scale(1.2)}
+    .variant-dot:hover{transform:scale(1.15)}
+    .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid #f0f0f0}
+    .price{font-size:18px;font-weight:800;color:var(--black)}
+    .price-sub{font-size:10px;color:var(--muted)}
+    .price-na{font-size:11px;color:var(--muted);font-style:italic}
+    .card-actions{display:flex;gap:6px}
+    .btn-add{
+      background:var(--magenta);color:#fff;border:none;
+      border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;
+      cursor:pointer;transition:background .18s;white-space:nowrap;
+    }
+    .btn-add:hover{background:var(--magenta-dark)}
+    .btn-detail{
+      background:#f0f0f0;color:var(--black);border:none;
+      border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;
+      cursor:pointer;transition:background .18s;
+    }
+    .btn-detail:hover{background:var(--cyan-light);color:var(--cyan-dark)}
+
+    /* ── CART DRAWER ── */
+    .cart-overlay{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,.45);z-index:400;
+    }
+    .cart-overlay.open{display:block}
+    .cart-drawer{
+      position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;
+      background:#fff;z-index:401;
+      display:flex;flex-direction:column;
+      box-shadow:-4px 0 30px rgba(0,0,0,.18);
+      transform:translateX(100%);transition:transform .3s ease;
+    }
+    .cart-drawer.open{transform:translateX(0)}
+    .cart-header{
+      background:var(--black);color:#fff;
+      padding:18px 20px;display:flex;align-items:center;justify-content:space-between;
+    }
+    .cart-header h2{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .cart-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.7;transition:opacity .2s}
+    .cart-close:hover{opacity:1}
+    .cart-body{flex:1;overflow-y:auto;padding:16px}
+    .cart-empty{
+      display:flex;flex-direction:column;align-items:center;
+      justify-content:center;height:100%;gap:12px;color:var(--muted);text-align:center;
+    }
+    .cart-empty-icon{font-size:52px;opacity:.3}
+    .cart-empty p{font-size:14px}
+    .cart-item{
+      display:flex;gap:12px;padding:14px 0;
+      border-bottom:1px solid var(--border);
+    }
+    .cart-item:last-child{border-bottom:none}
+    .ci-img{
+      width:64px;height:64px;border-radius:10px;
+      background:#f8f8f8;overflow:hidden;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .ci-img img{width:100%;height:100%;object-fit:contain;padding:6px}
+    .ci-img .ph-icon{font-size:28px;opacity:.35}
+    .ci-info{flex:1;min-width:0}
+    .ci-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:2px}
+    .ci-code{font-size:11px;color:var(--muted);font-family:monospace}
+    .ci-color{
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:11px;color:var(--muted);margin-top:3px;
+    }
+    .ci-colordot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+    .ci-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+    .ci-qty{display:flex;align-items:center;gap:6px}
+    .qty-btn{
+      width:24px;height:24px;border-radius:6px;border:1.5px solid var(--border);
+      background:#fff;cursor:pointer;font-size:14px;font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      transition:all .15s;color:var(--black);
+    }
+    .qty-btn:hover{border-color:var(--cyan);color:var(--cyan-dark)}
+    .qty-val{font-size:13px;font-weight:700;min-width:20px;text-align:center}
+    .ci-price{font-size:14px;font-weight:800;color:var(--black)}
+    .ci-price.na{font-size:11px;color:var(--muted);font-style:italic;font-weight:400}
+    .ci-remove{
+      background:none;border:none;color:#ccc;cursor:pointer;
+      font-size:16px;padding:0 4px;transition:color .15s;align-self:flex-start;
+    }
+    .ci-remove:hover{color:var(--magenta)}
+    .cart-footer{
+      padding:16px 20px;border-top:2px solid var(--border);
+      background:#fafafa;
+    }
+    .cart-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+    .cart-total-label{font-size:12px;color:var(--muted)}
+    .cart-total-label.main{font-size:14px;font-weight:700;color:var(--black)}
+    .cart-total-val{font-size:13px;font-weight:600;color:var(--black)}
+    .cart-total-val.main{font-size:20px;font-weight:900;color:var(--black)}
+    .cart-note{font-size:11px;color:var(--muted);margin:8px 0 12px;line-height:1.5}
+    .btn-quote{
+      width:100%;padding:14px;background:var(--cyan);color:var(--black);
+      border:none;border-radius:12px;font-size:15px;font-weight:800;
+      cursor:pointer;transition:background .2s;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    }
+    .btn-quote:hover{background:var(--cyan-dark);color:#fff}
+    .btn-clear{
+      width:100%;padding:10px;background:#f0f0f0;color:var(--muted);
+      border:none;border-radius:10px;font-size:13px;font-weight:600;
+      cursor:pointer;transition:background .2s;margin-top:8px;
+    }
+    .btn-clear:hover{background:#e0e0e0;color:var(--black)}
+
+    /* ── MODAL ── */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay.open{display:flex}
+    .modal-wrapper{position:relative;max-width:820px;width:100%}
+    .modal{background:#fff;border-radius:20px;max-height:88vh;overflow-y:auto;display:flex;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-gallery{width:44%;flex-shrink:0;padding:22px;background:#f8f8f8;border-radius:20px 0 0 20px;display:flex;flex-direction:column;gap:10px}
+    .modal-main-img{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:12px;background:#fff}
+    .modal-main-ph{width:100%;aspect-ratio:1/1;background:#f0f0f0;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+    .modal-thumbs{display:flex;gap:6px;flex-wrap:wrap}
+    .modal-thumb{width:52px;height:52px;object-fit:contain;border-radius:8px;background:#fff;cursor:pointer;border:2px solid transparent;padding:4px;transition:border .18s}
+    .modal-thumb.active,.modal-thumb:hover{border-color:var(--cyan)}
+    .modal-info{flex:1;padding:26px 24px;display:flex;flex-direction:column}
+    .modal-badge{margin-bottom:10px;display:inline-block}
+    .modal-ph-notice{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 13px;font-size:11px;color:#92400e;margin-bottom:12px}
+    .modal-code{font-size:11px;color:var(--muted);font-family:monospace;margin-bottom:4px}
+    .modal-name{font-size:22px;font-weight:900;line-height:1.2;margin-bottom:4px}
+    .modal-price{font-size:30px;font-weight:900;color:var(--black);margin:10px 0 2px}
+    .modal-price-label{font-size:11px;color:var(--muted);margin-bottom:14px}
+    hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+    .modal-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+    .modal-variants{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .modal-variant-btn{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .18s;font-size:12px;font-weight:500;background:#fff}
+    .modal-variant-btn.active{border-color:var(--cyan);background:var(--cyan-light);color:var(--cyan-dark)}
+    .modal-variant-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+    .modal-actions{display:flex;gap:10px;margin-top:auto;padding-top:14px}
+    .modal-btn-add{flex:1;padding:13px;background:var(--magenta);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;transition:background .2s}
+    .modal-btn-add:hover{background:var(--magenta-dark)}
+    .modal-btn-detail{padding:13px 16px;background:#f0f0f0;color:var(--black);border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
+    .modal-btn-detail:hover{background:var(--cyan-light);color:var(--cyan-dark)}
+    .modal-close{position:absolute;top:14px;right:14px;background:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:10}
+
+    /* ── TOAST ── */
+    .toast{
+      position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);
+      background:var(--black);color:#fff;padding:12px 20px;border-radius:10px;
+      font-size:13px;font-weight:600;z-index:600;opacity:0;
+      transition:all .3s;white-space:nowrap;
+      border-left:4px solid var(--cyan);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    /* ── FOOTER ── */
+    footer{background:var(--black);color:#555;text-align:center;padding:18px 24px;font-size:11px;border-top:3px solid var(--black2)}
+    footer .accent{color:var(--cyan);font-weight:700}
+    .footer-bar{display:flex;justify-content:center;gap:0;margin-bottom:10px}
+    .footer-bar div{height:4px;width:60px}
+
+    /* ── EMPTY ── */
+    .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty-state p{font-size:14px;margin-top:10px}
+
+    @media(max-width:860px){
+      :root{--sidebar:0px}
+      aside{display:none}
+      .header-center{display:none}
+    }
+    @media(max-width:580px){
+      .hero{padding:24px 16px 20px}
+      .controls,.grid-wrap{padding:12px 14px}
+      .modal{flex-direction:column}
+      .modal-gallery{width:100%;border-radius:20px 20px 0 0}
+      header{padding:0 14px}
+      .cart-drawer{width:100vw}
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-mark">
+      <div class="logo-c"></div><div class="logo-m"></div>
+      <div class="logo-y"></div><div class="logo-k"></div>
+    </div>
+    <div class="logo-text">Canvas <span>Media</span></div>
+  </a>
+  <div class="header-center">
+    <div class="header-search">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Buscar producto o código…"/>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="cart-toggle" id="cartToggle" onclick="openCart()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Mi cotización
+      <span class="cart-badge hidden" id="cartBadge">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <aside id="sidebar"></aside>
+  <main>
+    <div class="hero" id="heroSection">
+      <div class="hero-inner">
+        <div class="hero-content">
+          <div class="hero-badge" id="heroBadge"></div>
+          <h1 id="heroTitle"></h1>
+          <p id="heroDesc"></p>
+          <div class="hero-stats">
+            <div class="stat"><div class="stat-num" id="statModelos">0</div><div class="stat-label">Modelos</div></div>
+            <div class="stat"><div class="stat-num" id="statVariantes">0</div><div class="stat-label">Variantes</div></div>
+            <div class="stat"><div class="stat-num" id="statOutlet">0</div><div class="stat-label">Outlet</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="filter-group">
+        <button class="filter-btn active" data-filter="all">Todos</button>
+        <button class="filter-btn" data-filter="PRECIO ÚNICO">Precio Único</button>
+        <button class="filter-btn" data-filter="OUTLET">Outlet</button>
+        <button class="filter-btn" data-filter="NORMAL">Normal</button>
+      </div>
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+    <div class="grid-wrap">
+      <div class="grid" id="productGrid"></div>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>No se encontraron productos.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-header">
+    <h2>
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Mi Cotización
+    </h2>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-body" id="cartBody"></div>
+  <div class="cart-footer" id="cartFooter"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-wrapper">
+    <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    <div class="modal" id="modalContent"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div class="footer-bar">
+    <div style="background:var(--cyan)"></div>
+    <div style="background:var(--magenta)"></div>
+    <div style="background:var(--yellow)"></div>
+    <div style="background:#333"></div>
+  </div>
+  <p>© 2026 <span class="accent">Canvas Media</span> — Lista de precios MXN (LAB Guadalajara) — Vigencia junio 2026</p>
+  <p style="margin-top:4px">Precios únicos y outlet no aplican con otras promociones. Datos de demo sujetos a cambio.</p>
+</footer>
+
+<script>
+const ALL_CATS = [{"id": "audifonos", "label": "Audífonos", "icon": "🎧", "real": true, "products": [{"id": "AUD-001", "name": "AUDÍFONOS MEGA BEAT", "variants": [{"color": "B", "file": "AUD-001-B.jpg", "code": "AUD-001-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 81.13, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS MEGA BEAT"}], "extra_images": ["AUD-001-B_1.jpg", "AUD-001-B_1_1.jpg", "AUD-001-B_2.jpg", "AUD-001-B_2_1.jpg", "AUD-001-B_3.jpg"], "main_price": 81.13, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-004", "name": "AUDÍFONOS MELODY", "variants": [{"color": "A", "file": "AUD-004-A.jpg", "code": "AUD-004-A", "label": "Azul", "hex": "#4A90D9", "precio": 8.34, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS MELODY AZUL"}, {"color": "R", "file": "AUD-004-R.jpg", "code": "AUD-004-R", "label": "Rojo", "hex": "#E74C3C", "precio": 8.34, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS MELODY ROJO"}, {"color": "S", "file": "AUD-004-S.jpg", "code": "AUD-004-S", "label": "Soccer", "hex": "#95A5A6", "precio": 10.74, "tipo": "PRECIO ÚNICO", "nombre": "AURICULARES SOCCER"}, {"color": null, "file": "AUD-004.jpg", "code": "AUD-004", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-004-A_1.jpg", "AUD-004-A_1_1.jpg", "AUD-004-A_2.jpg", "AUD-004-R_1.jpg", "AUD-004-R_1_1.jpg", "AUD-004-R_2.jpg"], "main_price": 8.34, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-006", "name": "AUDÍFONOS KYAR", "variants": [{"color": "A", "file": "AUD-006-A.jpg", "code": "AUD-006-A", "label": "Azul", "hex": "#4A90D9", "precio": 31.59, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS KYAR AZUL"}, {"color": "B", "file": "AUD-006-B.jpg", "code": "AUD-006-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 31.59, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS KYAR BLANCO"}, {"color": "R", "file": "AUD-006-R.jpg", "code": "AUD-006-R", "label": "Rojo", "hex": "#E74C3C", "precio": null, "tipo": null, "nombre": null}, {"color": null, "file": "AUD-006.jpg", "code": "AUD-006", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-006-A_1.jpg", "AUD-006-B_1.jpg", "AUD-006-R_1.jpg", "AUD-006_1.jpg"], "main_price": 31.59, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-007", "name": "AUD-007", "variants": [{"color": "B", "file": "AUD-007-B.jpg", "code": "AUD-007-B", "label": "Blanco", "hex": "#e8e8e8", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-007-B_1.jpg", "AUD-007-B_2.jpg", "AUD-007-B_3.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-010", "name": "AUD-010", "variants": [{"color": "G", "file": "AUD-010-G.jpg", "code": "AUD-010-G", "label": "Gris", "hex": "#888888", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-010-G_1.jpg", "AUD-010-G_2.jpg", "AUD-010-G_3.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-015", "name": "AUDÍFONOS BELA", "variants": [{"color": "B", "file": "AUD-015-B.jpg", "code": "AUD-015-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 15.95, "tipo": "NORMAL", "nombre": "AUDÍFONOS BELA"}], "extra_images": ["AUD-015-B_1.jpg"], "main_price": 15.95, "tipo": "NORMAL"}, {"id": "AUD-016", "name": "AUD-016", "variants": [{"color": "G", "file": "AUD-016-G.jpg", "code": "AUD-016-G", "label": "Gris", "hex": "#888888", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-016-G_1.jpg", "AUD-016-G_2.jpg", "AUD-016-G_3.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-018", "name": "AUD-018", "variants": [{"color": "A", "file": "AUD-018-A.jpg", "code": "AUD-018-A", "label": "Azul", "hex": "#4A90D9", "precio": null, "tipo": null, "nombre": null}, {"color": "N", "file": "AUD-018-N.jpg", "code": "AUD-018-N", "label": "Negro", "hex": "#1a1a1a", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-018-A_1.jpg", "AUD-018-N_1.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-019", "name": "AUDÍFONOS EUKEN", "variants": [{"color": "B", "file": "AUD-019-B.jpg", "code": "AUD-019-B", "label": "Blanco", "hex": "#e8e8e8", "precio": null, "tipo": null, "nombre": null}, {"color": "R", "file": "AUD-019-R.jpg", "code": "AUD-019-R", "label": "Rojo", "hex": "#E74C3C", "precio": 72.31, "tipo": "OUTLET", "nombre": "AUDÍFONOS EUKEN ROJO"}], "extra_images": [], "main_price": 72.31, "tipo": "OUTLET"}, {"id": "AUD-021", "name": "AUDÍFONOS TANGER", "variants": [{"color": "N", "file": "AUD-021-N.jpg", "code": "AUD-021-N", "label": "Negro", "hex": "#1a1a1a", "precio": 124.48, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS TANGER"}], "extra_images": ["AUD-021-N_1.jpg", "AUD-021-N_2.jpg", "AUD-021-N_3.jpg"], "main_price": 124.48, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-022", "name": "AUDÍFONOS SARAJEVO", "variants": [{"color": "A", "file": "AUD-022-A.jpg", "code": "AUD-022-A", "label": "Azul", "hex": "#4A90D9", "precio": 84.97, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS SARAJEVO AZUL"}, {"color": "B", "file": "AUD-022-B.jpg", "code": "AUD-022-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 84.97, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS SARAJEVO BLANCO"}, {"color": "M", "file": "AUD-022-M.jpg", "code": "AUD-022-M", "label": "Morado", "hex": "#9B59B6", "precio": 84.97, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS SARAJEVO MORADO"}, {"color": "O", "file": "AUD-022-O.jpg", "code": "AUD-022-O", "label": "Naranja", "hex": "#FF7F00", "precio": 84.97, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS SARAJEVO NARANJA"}], "extra_images": ["AUD-022-A_1.jpg", "AUD-022-B_1.jpg", "AUD-022-B_2.jpg", "AUD-022-M_1.jpg", "AUD-022-O_1.jpg"], "main_price": 84.97, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-023", "name": "AUD-023", "variants": [{"color": "N", "file": "AUD-023-N.jpg", "code": "AUD-023-N", "label": "Negro", "hex": "#1a1a1a", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-023-N_1.jpg", "AUD-023-N_2.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-024", "name": "AUD-024", "variants": [{"color": "N", "file": "AUD-024-N.jpg", "code": "AUD-024-N", "label": "Negro", "hex": "#1a1a1a", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-024-N_1.jpg", "AUD-024-N_2.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-025", "name": "AUDÍFONOS ERFOUD", "variants": [{"color": "B", "file": "AUD-025-B.jpg", "code": "AUD-025-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 131.96, "tipo": "OUTLET", "nombre": "AUDÍFONOS ERFOUD"}], "extra_images": ["AUD-025-B_1.jpg"], "main_price": 131.96, "tipo": "OUTLET"}, {"id": "AUD-026", "name": "AUD-026", "variants": [{"color": "B", "file": "AUD-026-B.jpg", "code": "AUD-026-B", "label": "Blanco", "hex": "#e8e8e8", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-026-B_1.jpg", "AUD-026-B_2.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-027", "name": "AUDÍFONOS CICLE", "variants": [{"color": "B", "file": "AUD-027-B.jpg", "code": "AUD-027-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 29.95, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS CICLE"}], "extra_images": ["AUD-027-B_1.jpg", "AUD-027-B_2.jpg", "AUD-027-B_3.jpg", "AUD-027-B_4.jpg", "AUD-027-B_5.jpg"], "main_price": 29.95, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-028", "name": "AUD-028", "variants": [{"color": "N", "file": "AUD-028-N.jpg", "code": "AUD-028-N", "label": "Negro", "hex": "#1a1a1a", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-028-N_1.jpg", "AUD-028-N_2.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-029", "name": "AUDÍFONOS PORTER", "variants": [{"color": "N", "file": "AUD-029-N.jpg", "code": "AUD-029-N", "label": "Negro", "hex": "#1a1a1a", "precio": 167.51, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS PORTER NEGRO"}], "extra_images": ["AUD-029-N_1.jpg", "AUD-029-N_2.jpg", "AUD-029-N_3.jpg"], "main_price": 167.51, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-031", "name": "AUDÍFONOS SANS", "variants": [{"color": "B", "file": "AUD-031-B.jpg", "code": "AUD-031-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 62.52, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS SANS BLANCO"}], "extra_images": ["AUD-031-B_1.jpg", "AUD-031-B_2.jpg", "AUD-031-B_3.jpg", "AUD-031-B_4.jpg"], "main_price": 62.52, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-033", "name": "AUD-033", "variants": [{"color": "B", "file": "AUD-033-B.jpg", "code": "AUD-033-B", "label": "Blanco", "hex": "#e8e8e8", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-033-B_1.jpg", "AUD-033-B_2.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-034", "name": "AUDÍFONOS JACOB", "variants": [{"color": "N", "file": "AUD-034-N.jpg", "code": "AUD-034-N", "label": "Negro", "hex": "#1a1a1a", "precio": 243.62, "tipo": "NORMAL", "nombre": "AUDÍFONOS JACOB"}, {"color": null, "file": "AUD-034.jpg", "code": "AUD-034", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-034-N_1.jpg", "AUD-034-N_2.jpg", "AUD-034-N_3.jpg"], "main_price": 243.62, "tipo": "NORMAL"}, {"id": "AUD-035", "name": "BOCINA PETAIN", "variants": [{"color": "N", "file": "AUD-035-N.jpg", "code": "AUD-035-N", "label": "Negro", "hex": "#1a1a1a", "precio": 192.03, "tipo": "PRECIO ÚNICO", "nombre": "BOCINA PETAIN"}], "extra_images": ["AUD-035-N_1.jpg", "AUD-035-N_2.jpg", "AUD-035-N_3.jpg"], "main_price": 192.03, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-036", "name": "BOCINA LÁMPARA LAON", "variants": [{"color": "B", "file": "AUD-036-B.jpg", "code": "AUD-036-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 210, "tipo": "NORMAL", "nombre": "BOCINA LÁMPARA LAON"}], "extra_images": ["AUD-036-B_1.jpg", "AUD-036-B_2.jpg"], "main_price": 210, "tipo": "NORMAL"}, {"id": "AUD-037", "name": "AUDÍFONOS SOUND", "variants": [{"color": "1", "file": "AUD-037-1.jpg", "code": "AUD-037-1", "label": "1", "hex": "#555", "precio": null, "tipo": null, "nombre": null}, {"color": "A", "file": "AUD-037-A.jpg", "code": "AUD-037-A", "label": "Azul", "hex": "#4A90D9", "precio": 242.45, "tipo": "OUTLET", "nombre": "AUDÍFONOS SOUND AZUL"}, {"color": "G", "file": "AUD-037-G.jpg", "code": "AUD-037-G", "label": "Gris", "hex": "#888888", "precio": null, "tipo": null, "nombre": null}, {"color": "P", "file": "AUD-037-P.jpg", "code": "AUD-037-P", "label": "Rosa", "hex": "#FF69B4", "precio": 242.45, "tipo": "OUTLET", "nombre": "AUDÍFONOS SOUND ROSA"}, {"color": null, "file": "AUD-037.jpg", "code": "AUD-037", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-037-A_1.jpg", "AUD-037-A_2.jpg", "AUD-037-A_3.jpg", "AUD-037-A_4.jpg", "AUD-037-G_1.jpg", "AUD-037-G_2.jpg"], "main_price": 242.45, "tipo": "OUTLET"}, {"id": "AUD-038", "name": "AUDÍFONOS RITMOSS", "variants": [{"color": "N", "file": "AUD-038-N.jpg", "code": "AUD-038-N", "label": "Negro", "hex": "#1a1a1a", "precio": 145.27, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS RITMOSS"}, {"color": null, "file": "AUD-038.jpg", "code": "AUD-038", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-038-N_1.jpg", "AUD-038-N_2.jpg", "AUD-038-N_3.jpg"], "main_price": 145.27, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-039", "name": "AUDÍFONOS LESLY", "variants": [{"color": "B", "file": "AUD-039-B.jpg", "code": "AUD-039-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 199.73, "tipo": "NORMAL", "nombre": "AUDÍFONOS LESLY BLANCO"}, {"color": "N", "file": "AUD-039-N.jpg", "code": "AUD-039-N", "label": "Negro", "hex": "#1a1a1a", "precio": 199.73, "tipo": "NORMAL", "nombre": "AUDÍFONOS LESLY NEGRO"}, {"color": null, "file": "AUD-039.jpg", "code": "AUD-039", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-039-B_1.jpg", "AUD-039-B_2.jpg", "AUD-039-N_1.jpg", "AUD-039-N_2.jpg"], "main_price": 199.73, "tipo": "NORMAL"}, {"id": "AUD-040", "name": "AUD-040", "variants": [{"color": "N", "file": "AUD-040-N.jpg", "code": "AUD-040-N", "label": "Negro", "hex": "#1a1a1a", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-040-N_1.jpg", "AUD-040-N_2.jpg"], "main_price": null, "tipo": null}, {"id": "AUD-041", "name": "AUDÍFONOS MIGA", "variants": [{"color": "B", "file": "AUD-041-B.jpg", "code": "AUD-041-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 168.84, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS MIGA"}], "extra_images": ["AUD-041-B_1.jpg", "AUD-041-B_2.jpg", "AUD-041-B_3.jpg", "AUD-041-B_4.jpg"], "main_price": 168.84, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-042", "name": "AUDÍFONOS LINA", "variants": [{"color": "AM", "file": "AUD-042-AM.jpg", "code": "AUD-042-AM", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 88.68, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS LINA AZUL MARINO"}, {"color": "B", "file": "AUD-042-B.jpg", "code": "AUD-042-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 88.68, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS LINA BLANCO"}, {"color": "G", "file": "AUD-042-G.jpg", "code": "AUD-042-G", "label": "Gris", "hex": "#888888", "precio": 88.68, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS LINA GRIS"}, {"color": "N", "file": "AUD-042-N.jpg", "code": "AUD-042-N", "label": "Negro", "hex": "#1a1a1a", "precio": 88.68, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS LINA NEGRO"}, {"color": "P", "file": "AUD-042-P.jpg", "code": "AUD-042-P", "label": "Rosa", "hex": "#FF69B4", "precio": 88.68, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS LINA ROSA"}, {"color": "Y", "file": "AUD-042-Y.jpg", "code": "AUD-042-Y", "label": "Amarillo", "hex": "#F1C40F", "precio": 88.68, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS LINA AMARILLO"}, {"color": null, "file": "AUD-042.jpg", "code": "AUD-042", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-042-AM_1.jpg", "AUD-042-B_1.jpg", "AUD-042-B_2.jpg", "AUD-042-B_3.jpg", "AUD-042-B_4.jpg", "AUD-042-G_1.jpg"], "main_price": 88.68, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-043", "name": "AUDÍFONOS KANEK", "variants": [{"color": "A", "file": "AUD-043-A.jpg", "code": "AUD-043-A", "label": "Azul", "hex": "#4A90D9", "precio": 67.47, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS KANEK AZUL"}, {"color": "N", "file": "AUD-043-N.jpg", "code": "AUD-043-N", "label": "Negro", "hex": "#1a1a1a", "precio": 67.47, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS KANEK NEGRO"}, {"color": "P", "file": "AUD-043-P.jpg", "code": "AUD-043-P", "label": "Rosa", "hex": "#FF69B4", "precio": 67.47, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS KANEK ROSA"}, {"color": "Y", "file": "AUD-043-Y.jpg", "code": "AUD-043-Y", "label": "Amarillo", "hex": "#F1C40F", "precio": 67.47, "tipo": "PRECIO ÚNICO", "nombre": "AUDÍFONOS KANEK AMARILLO"}, {"color": null, "file": "AUD-043.jpg", "code": "AUD-043", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-043-A_1.jpg", "AUD-043-A_2.jpg", "AUD-043-A_3.jpg", "AUD-043-A_4.jpg", "AUD-043-N_1.jpg", "AUD-043-N_2.jpg"], "main_price": 67.47, "tipo": "PRECIO ÚNICO"}, {"id": "AUD-044", "name": "AUDÍFONOS ECO BYXO", "variants": [{"color": "N", "file": "AUD-044-N.jpg", "code": "AUD-044-N", "label": "Negro", "hex": "#1a1a1a", "precio": 276.67, "tipo": "NORMAL", "nombre": "AUDÍFONOS ECO BYXO"}], "extra_images": ["AUD-044-N_1.jpg", "AUD-044-N_2.jpg", "AUD-044-N_3.jpg", "AUD-044-N_4.jpg", "AUD-044-N_5.jpg", "AUD-044-N_6.jpg"], "main_price": 276.67, "tipo": "NORMAL"}, {"id": "AUD-045", "name": "AUDÍFONOS SORI", "variants": [{"color": "B", "file": "AUD-045-B.jpg", "code": "AUD-045-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 243, "tipo": "NORMAL", "nombre": "AUDÍFONOS SORI"}], "extra_images": ["AUD-045-B_1.jpg", "AUD-045-B_2.jpg", "AUD-045-B_3.jpg", "AUD-045-B_4.jpg"], "main_price": 243, "tipo": "NORMAL"}, {"id": "AUD-047", "name": "AUDÍFONOS GREDZEN", "variants": [{"color": "A", "file": "AUD-047-A.jpg", "code": "AUD-047-A", "label": "Azul", "hex": "#4A90D9", "precio": 173.15, "tipo": "NORMAL", "nombre": "AUDÍFONOS GREDZEN AZUL"}, {"color": "B", "file": "AUD-047-B.jpg", "code": "AUD-047-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 173.15, "tipo": "NORMAL", "nombre": "AUDÍFONOS GREDZEN BLANCO"}, {"color": "BE", "file": "AUD-047-BE.jpg", "code": "AUD-047-BE", "label": "Beige", "hex": "#C4A882", "precio": 173.15, "tipo": "NORMAL", "nombre": "AUDÍFONOS GREDZEN BEIGE"}, {"color": "P", "file": "AUD-047-P.jpg", "code": "AUD-047-P", "label": "Rosa", "hex": "#FF69B4", "precio": 173.15, "tipo": "NORMAL", "nombre": "AUDÍFONOS GREDZEN ROSA"}, {"color": null, "file": "AUD-047.jpg", "code": "AUD-047", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-047-A_1.jpg", "AUD-047-A_2.jpg", "AUD-047-A_3.jpg", "AUD-047-B_1.jpg", "AUD-047-BE_1.jpg", "AUD-047-P_1.jpg"], "main_price": 173.15, "tipo": "NORMAL"}, {"id": "AUD-048", "name": "AUDÍFONOS DEZ", "variants": [{"color": "A", "file": "AUD-048-A.jpg", "code": "AUD-048-A", "label": "Azul", "hex": "#4A90D9", "precio": 168.23, "tipo": "NORMAL", "nombre": "AUDÍFONOS DEZ AZUL"}, {"color": "BE", "file": "AUD-048-BE.jpg", "code": "AUD-048-BE", "label": "Beige", "hex": "#C4A882", "precio": 168.23, "tipo": "NORMAL", "nombre": "AUDÍFONOS DEZ BEIGE"}, {"color": "N", "file": "AUD-048-N.jpg", "code": "AUD-048-N", "label": "Negro", "hex": "#1a1a1a", "precio": 168.23, "tipo": "NORMAL", "nombre": "AUDÍFONOS DEZ NEGRO"}, {"color": null, "file": "AUD-048.jpg", "code": "AUD-048", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-048-A_1.jpg", "AUD-048-A_2.jpg", "AUD-048-BE_1.jpg", "AUD-048-BE_2.jpg", "AUD-048-N_1.jpg", "AUD-048-N_2.jpg"], "main_price": 168.23, "tipo": "NORMAL"}, {"id": "AUD-049", "name": "AUDÍFONOS KEMIK", "variants": [{"color": "B", "file": "AUD-049-B.jpg", "code": "AUD-049-B", "label": "Blanco", "hex": "#e8e8e8", "precio": 195.86, "tipo": "NORMAL", "nombre": "AUDÍFONOS KEMIK"}, {"color": null, "file": "AUD-049.jpg", "code": "AUD-049", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-049-B_1.jpg", "AUD-049-B_2.jpg", "AUD-049-B_3.jpg", "AUD-049-B_4.jpg", "AUD-049-B_5.jpg", "AUD-049-B_7.jpg"], "main_price": 195.86, "tipo": "NORMAL"}, {"id": "AUD-050", "name": "AUDÍFONOS POPS", "variants": [{"color": "A", "file": "AUD-050-A.jpg", "code": "AUD-050-A", "label": "Azul", "hex": "#4A90D9", "precio": 185.14, "tipo": "NORMAL", "nombre": "AUDÍFONOS POPS AZUL"}, {"color": "BE", "file": "AUD-050-BE.jpg", "code": "AUD-050-BE", "label": "Beige", "hex": "#C4A882", "precio": 185.14, "tipo": "NORMAL", "nombre": "AUDÍFONOS POPS BEIGE"}, {"color": "M", "file": "AUD-050-M.jpg", "code": "AUD-050-M", "label": "Morado", "hex": "#9B59B6", "precio": 185.14, "tipo": "NORMAL", "nombre": "AUDÍFONOS POPS MORADO"}, {"color": null, "file": "AUD-050.jpg", "code": "AUD-050", "label": "Único", "hex": "#555", "precio": null, "tipo": null, "nombre": null}], "extra_images": ["AUD-050-A_1.jpg", "AUD-050-A_2.jpg", "AUD-050-A_3.jpg", "AUD-050-BE_1.jpg", "AUD-050-M_1.jpg", "AUD-050-M_2.jpg"], "main_price": 185.14, "tipo": "NORMAL"}]}, {"id": "hoodie-cerrada", "label": "Hoodie Cerrada", "icon": "🧥", "real": false, "products": [{"id": "HOO-001", "name": "Hoodie Bravo", "variants": [{"color": "0", "file": null, "code": "HOO-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 269.52, "tipo": "NORMAL", "nombre": "Hoodie Bravo Negro"}, {"color": "1", "file": null, "code": "HOO-001-02", "label": "Gris", "hex": "#888", "precio": 283.82, "tipo": "NORMAL", "nombre": "Hoodie Bravo Gris"}, {"color": "2", "file": null, "code": "HOO-001-03", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 211.25, "tipo": "NORMAL", "nombre": "Hoodie Bravo Azul Marino"}], "extra_images": [], "main_price": 269.52, "tipo": "NORMAL"}, {"id": "HOO-002", "name": "Hoodie Summit", "variants": [{"color": "0", "file": null, "code": "HOO-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 301.5, "tipo": "OUTLET", "nombre": "Hoodie Summit Negro"}, {"color": "1", "file": null, "code": "HOO-002-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 213.04, "tipo": "PRECIO ÚNICO", "nombre": "Hoodie Summit Blanco"}, {"color": "2", "file": null, "code": "HOO-002-03", "label": "Verde", "hex": "#2d6a4f", "precio": 204.77, "tipo": "NORMAL", "nombre": "Hoodie Summit Verde"}], "extra_images": [], "main_price": 301.5, "tipo": "OUTLET"}, {"id": "HOO-003", "name": "Hoodie Urban Flex", "variants": [{"color": "0", "file": null, "code": "HOO-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 238.42, "tipo": "OUTLET", "nombre": "Hoodie Urban Flex Negro"}, {"color": "1", "file": null, "code": "HOO-003-02", "label": "Rojo", "hex": "#E74C3C", "precio": 288.26, "tipo": "OUTLET", "nombre": "Hoodie Urban Flex Rojo"}, {"color": "2", "file": null, "code": "HOO-003-03", "label": "Azul", "hex": "#4A90D9", "precio": 235.85, "tipo": "OUTLET", "nombre": "Hoodie Urban Flex Azul"}], "extra_images": [], "main_price": 238.42, "tipo": "OUTLET"}, {"id": "HOO-004", "name": "Hoodie Classic", "variants": [{"color": "0", "file": null, "code": "HOO-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 236.15, "tipo": "PRECIO ÚNICO", "nombre": "Hoodie Classic Negro"}, {"color": "1", "file": null, "code": "HOO-004-02", "label": "Gris Melange", "hex": "#aaa", "precio": 254.82, "tipo": "NORMAL", "nombre": "Hoodie Classic Gris Melange"}], "extra_images": [], "main_price": 236.15, "tipo": "PRECIO ÚNICO"}, {"id": "HOO-005", "name": "Hoodie Oversize", "variants": [{"color": "0", "file": null, "code": "HOO-005-01", "label": "Negro", "hex": "#1a1a1a", "precio": 341.41, "tipo": "NORMAL", "nombre": "Hoodie Oversize Negro"}, {"color": "1", "file": null, "code": "HOO-005-02", "label": "Beige", "hex": "#C4A882", "precio": 331.7, "tipo": "NORMAL", "nombre": "Hoodie Oversize Beige"}, {"color": "2", "file": null, "code": "HOO-005-03", "label": "Morado", "hex": "#9B59B6", "precio": 264.46, "tipo": "NORMAL", "nombre": "Hoodie Oversize Morado"}], "extra_images": [], "main_price": 341.41, "tipo": "NORMAL"}, {"id": "HOO-006", "name": "Hoodie Tech Shell", "variants": [{"color": "0", "file": null, "code": "HOO-006-01", "label": "Negro", "hex": "#1a1a1a", "precio": 393.15, "tipo": "NORMAL", "nombre": "Hoodie Tech Shell Negro"}, {"color": "1", "file": null, "code": "HOO-006-02", "label": "Navy", "hex": "#1B3A6B", "precio": 256.35, "tipo": "PRECIO ÚNICO", "nombre": "Hoodie Tech Shell Navy"}], "extra_images": [], "main_price": 393.15, "tipo": "NORMAL"}]}, {"id": "zip-up-hoodie", "label": "Zip-Up Hoodie", "icon": "🤐", "real": false, "products": [{"id": "ZHO-001", "name": "Hoodie Zip Crest", "variants": [{"color": "0", "file": null, "code": "ZHO-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 209.02, "tipo": "NORMAL", "nombre": "Hoodie Zip Crest Negro"}, {"color": "1", "file": null, "code": "ZHO-001-02", "label": "Gris", "hex": "#888", "precio": 282.54, "tipo": "NORMAL", "nombre": "Hoodie Zip Crest Gris"}, {"color": "2", "file": null, "code": "ZHO-001-03", "label": "Azul", "hex": "#4A90D9", "precio": 300.81, "tipo": "OUTLET", "nombre": "Hoodie Zip Crest Azul"}], "extra_images": [], "main_price": 209.02, "tipo": "NORMAL"}, {"id": "ZHO-002", "name": "Hoodie Zip Polar", "variants": [{"color": "0", "file": null, "code": "ZHO-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 233.1, "tipo": "PRECIO ÚNICO", "nombre": "Hoodie Zip Polar Negro"}, {"color": "1", "file": null, "code": "ZHO-002-02", "label": "Rojo Vino", "hex": "#6d1a36", "precio": 226.43, "tipo": "NORMAL", "nombre": "Hoodie Zip Polar Rojo Vino"}], "extra_images": [], "main_price": 233.1, "tipo": "PRECIO ÚNICO"}, {"id": "ZHO-003", "name": "Hoodie Zip Track", "variants": [{"color": "0", "file": null, "code": "ZHO-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 325.26, "tipo": "OUTLET", "nombre": "Hoodie Zip Track Negro"}, {"color": "1", "file": null, "code": "ZHO-003-02", "label": "Gris Carbón", "hex": "#555", "precio": 333.39, "tipo": "NORMAL", "nombre": "Hoodie Zip Track Gris Carbón"}], "extra_images": [], "main_price": 325.26, "tipo": "OUTLET"}, {"id": "ZHO-004", "name": "Hoodie Zip Pro", "variants": [{"color": "0", "file": null, "code": "ZHO-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 306.6, "tipo": "NORMAL", "nombre": "Hoodie Zip Pro Negro"}, {"color": "1", "file": null, "code": "ZHO-004-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 226.87, "tipo": "NORMAL", "nombre": "Hoodie Zip Pro Blanco"}, {"color": "2", "file": null, "code": "ZHO-004-03", "label": "Verde Militar", "hex": "#4a5c3a", "precio": 335.96, "tipo": "NORMAL", "nombre": "Hoodie Zip Pro Verde Militar"}], "extra_images": [], "main_price": 306.6, "tipo": "NORMAL"}]}, {"id": "chaleco-vest", "label": "Chaleco / Vest", "icon": "🦺", "real": false, "products": [{"id": "CHA-001", "name": "Chaleco Puffer", "variants": [{"color": "0", "file": null, "code": "CHA-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 262.64, "tipo": "NORMAL", "nombre": "Chaleco Puffer Negro"}, {"color": "1", "file": null, "code": "CHA-001-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 205.62, "tipo": "PRECIO ÚNICO", "nombre": "Chaleco Puffer Azul Marino"}, {"color": "2", "file": null, "code": "CHA-001-03", "label": "Rojo", "hex": "#E74C3C", "precio": 236.28, "tipo": "NORMAL", "nombre": "Chaleco Puffer Rojo"}], "extra_images": [], "main_price": 262.64, "tipo": "NORMAL"}, {"id": "CHA-002", "name": "Chaleco Softshell", "variants": [{"color": "0", "file": null, "code": "CHA-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 195.33, "tipo": "NORMAL", "nombre": "Chaleco Softshell Negro"}, {"color": "1", "file": null, "code": "CHA-002-02", "label": "Gris", "hex": "#888", "precio": 201.19, "tipo": "NORMAL", "nombre": "Chaleco Softshell Gris"}], "extra_images": [], "main_price": 195.33, "tipo": "NORMAL"}, {"id": "CHA-003", "name": "Chaleco Ligero", "variants": [{"color": "0", "file": null, "code": "CHA-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 217.2, "tipo": "NORMAL", "nombre": "Chaleco Ligero Negro"}, {"color": "1", "file": null, "code": "CHA-003-02", "label": "Verde Militar", "hex": "#4a5c3a", "precio": 207.0, "tipo": "NORMAL", "nombre": "Chaleco Ligero Verde Militar"}, {"color": "2", "file": null, "code": "CHA-003-03", "label": "Navy", "hex": "#1B3A6B", "precio": 198.76, "tipo": "NORMAL", "nombre": "Chaleco Ligero Navy"}], "extra_images": [], "main_price": 217.2, "tipo": "NORMAL"}, {"id": "CHA-004", "name": "Chaleco Ejecutivo", "variants": [{"color": "0", "file": null, "code": "CHA-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 209.61, "tipo": "PRECIO ÚNICO", "nombre": "Chaleco Ejecutivo Negro"}, {"color": "1", "file": null, "code": "CHA-004-02", "label": "Azul", "hex": "#4A90D9", "precio": 222.39, "tipo": "OUTLET", "nombre": "Chaleco Ejecutivo Azul"}], "extra_images": [], "main_price": 209.61, "tipo": "PRECIO ÚNICO"}]}, {"id": "camiseta-cuello-redondo", "label": "Camiseta Cuello Redondo", "icon": "👕", "real": false, "products": [{"id": "CAM-001", "name": "Camiseta Essential", "variants": [{"color": "0", "file": null, "code": "CAM-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 54.88, "tipo": "NORMAL", "nombre": "Camiseta Essential Negro"}, {"color": "1", "file": null, "code": "CAM-001-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 82.93, "tipo": "NORMAL", "nombre": "Camiseta Essential Blanco"}, {"color": "2", "file": null, "code": "CAM-001-03", "label": "Gris", "hex": "#888", "precio": 55.31, "tipo": "NORMAL", "nombre": "Camiseta Essential Gris"}, {"color": "3", "file": null, "code": "CAM-001-04", "label": "Azul", "hex": "#4A90D9", "precio": 81.23, "tipo": "PRECIO ÚNICO", "nombre": "Camiseta Essential Azul"}], "extra_images": [], "main_price": 54.88, "tipo": "NORMAL"}, {"id": "CAM-002", "name": "Camiseta Dry Fit", "variants": [{"color": "0", "file": null, "code": "CAM-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 67.05, "tipo": "NORMAL", "nombre": "Camiseta Dry Fit Negro"}, {"color": "1", "file": null, "code": "CAM-002-02", "label": "Azul", "hex": "#4A90D9", "precio": 96.09, "tipo": "OUTLET", "nombre": "Camiseta Dry Fit Azul"}, {"color": "2", "file": null, "code": "CAM-002-03", "label": "Rojo", "hex": "#E74C3C", "precio": 94.44, "tipo": "NORMAL", "nombre": "Camiseta Dry Fit Rojo"}], "extra_images": [], "main_price": 67.05, "tipo": "NORMAL"}, {"id": "CAM-003", "name": "Camiseta Premium 220", "variants": [{"color": "0", "file": null, "code": "CAM-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 70.63, "tipo": "PRECIO ÚNICO", "nombre": "Camiseta Premium 220 Negro"}, {"color": "1", "file": null, "code": "CAM-003-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 79.78, "tipo": "PRECIO ÚNICO", "nombre": "Camiseta Premium 220 Blanco"}, {"color": "2", "file": null, "code": "CAM-003-03", "label": "Navy", "hex": "#1B3A6B", "precio": 67.14, "tipo": "NORMAL", "nombre": "Camiseta Premium 220 Navy"}, {"color": "3", "file": null, "code": "CAM-003-04", "label": "Verde", "hex": "#2d6a4f", "precio": 72.33, "tipo": "OUTLET", "nombre": "Camiseta Premium 220 Verde"}], "extra_images": [], "main_price": 70.63, "tipo": "PRECIO ÚNICO"}, {"id": "CAM-004", "name": "Camiseta Slim", "variants": [{"color": "0", "file": null, "code": "CAM-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 74.25, "tipo": "OUTLET", "nombre": "Camiseta Slim Negro"}, {"color": "1", "file": null, "code": "CAM-004-02", "label": "Gris", "hex": "#888", "precio": 69.28, "tipo": "OUTLET", "nombre": "Camiseta Slim Gris"}, {"color": "2", "file": null, "code": "CAM-004-03", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 67.97, "tipo": "NORMAL", "nombre": "Camiseta Slim Azul Marino"}], "extra_images": [], "main_price": 74.25, "tipo": "OUTLET"}, {"id": "CAM-005", "name": "Camiseta Oversize", "variants": [{"color": "0", "file": null, "code": "CAM-005-01", "label": "Negro", "hex": "#1a1a1a", "precio": 99.88, "tipo": "NORMAL", "nombre": "Camiseta Oversize Negro"}, {"color": "1", "file": null, "code": "CAM-005-02", "label": "Beige", "hex": "#C4A882", "precio": 77.93, "tipo": "NORMAL", "nombre": "Camiseta Oversize Beige"}, {"color": "2", "file": null, "code": "CAM-005-03", "label": "Blanco", "hex": "#e8e8e8", "precio": 89.01, "tipo": "NORMAL", "nombre": "Camiseta Oversize Blanco"}], "extra_images": [], "main_price": 99.88, "tipo": "NORMAL"}, {"id": "CAM-006", "name": "Camiseta Reciclada", "variants": [{"color": "0", "file": null, "code": "CAM-006-01", "label": "Negro", "hex": "#1a1a1a", "precio": 79.17, "tipo": "NORMAL", "nombre": "Camiseta Reciclada Negro"}, {"color": "1", "file": null, "code": "CAM-006-02", "label": "Verde", "hex": "#2d6a4f", "precio": 117.52, "tipo": "PRECIO ÚNICO", "nombre": "Camiseta Reciclada Verde"}, {"color": "2", "file": null, "code": "CAM-006-03", "label": "Azul", "hex": "#4A90D9", "precio": 105.78, "tipo": "PRECIO ÚNICO", "nombre": "Camiseta Reciclada Azul"}], "extra_images": [], "main_price": 79.17, "tipo": "NORMAL"}]}, {"id": "polo-manga-corta", "label": "Polo Manga Corta", "icon": "👔", "real": false, "products": [{"id": "POL-001", "name": "Polo Piqué Classic", "variants": [{"color": "0", "file": null, "code": "POL-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 109.81, "tipo": "PRECIO ÚNICO", "nombre": "Polo Piqué Classic Negro"}, {"color": "1", "file": null, "code": "POL-001-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 119.39, "tipo": "OUTLET", "nombre": "Polo Piqué Classic Blanco"}, {"color": "2", "file": null, "code": "POL-001-03", "label": "Azul Navy", "hex": "#1B3A6B", "precio": 140.95, "tipo": "NORMAL", "nombre": "Polo Piqué Classic Azul Navy"}], "extra_images": [], "main_price": 109.81, "tipo": "PRECIO ÚNICO"}, {"id": "POL-002", "name": "Polo Dry Performance", "variants": [{"color": "0", "file": null, "code": "POL-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 137.62, "tipo": "NORMAL", "nombre": "Polo Dry Performance Negro"}, {"color": "1", "file": null, "code": "POL-002-02", "label": "Gris", "hex": "#888", "precio": 137.72, "tipo": "OUTLET", "nombre": "Polo Dry Performance Gris"}, {"color": "2", "file": null, "code": "POL-002-03", "label": "Azul", "hex": "#4A90D9", "precio": 142.56, "tipo": "NORMAL", "nombre": "Polo Dry Performance Azul"}, {"color": "3", "file": null, "code": "POL-002-04", "label": "Rojo", "hex": "#E74C3C", "precio": 97.81, "tipo": "PRECIO ÚNICO", "nombre": "Polo Dry Performance Rojo"}], "extra_images": [], "main_price": 137.62, "tipo": "NORMAL"}, {"id": "POL-003", "name": "Polo Executive", "variants": [{"color": "0", "file": null, "code": "POL-003-01", "label": "Blanco", "hex": "#e8e8e8", "precio": 122.65, "tipo": "NORMAL", "nombre": "Polo Executive Blanco"}, {"color": "1", "file": null, "code": "POL-003-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 186.31, "tipo": "NORMAL", "nombre": "Polo Executive Azul Marino"}, {"color": "2", "file": null, "code": "POL-003-03", "label": "Negro", "hex": "#1a1a1a", "precio": 187.75, "tipo": "NORMAL", "nombre": "Polo Executive Negro"}], "extra_images": [], "main_price": 122.65, "tipo": "NORMAL"}, {"id": "POL-004", "name": "Polo Sport Fit", "variants": [{"color": "0", "file": null, "code": "POL-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 113.0, "tipo": "NORMAL", "nombre": "Polo Sport Fit Negro"}, {"color": "1", "file": null, "code": "POL-004-02", "label": "Verde", "hex": "#2d6a4f", "precio": 136.58, "tipo": "NORMAL", "nombre": "Polo Sport Fit Verde"}, {"color": "2", "file": null, "code": "POL-004-03", "label": "Azul", "hex": "#4A90D9", "precio": 134.71, "tipo": "OUTLET", "nombre": "Polo Sport Fit Azul"}], "extra_images": [], "main_price": 113.0, "tipo": "NORMAL"}]}, {"id": "chamarra", "label": "Chamarra", "icon": "🧣", "real": false, "products": [{"id": "CHJ-001", "name": "Chamarra Bomber", "variants": [{"color": "0", "file": null, "code": "CHJ-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 401.79, "tipo": "NORMAL", "nombre": "Chamarra Bomber Negro"}, {"color": "1", "file": null, "code": "CHJ-001-02", "label": "Verde Militar", "hex": "#4a5c3a", "precio": 354.78, "tipo": "NORMAL", "nombre": "Chamarra Bomber Verde Militar"}, {"color": "2", "file": null, "code": "CHJ-001-03", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 387.88, "tipo": "OUTLET", "nombre": "Chamarra Bomber Azul Marino"}], "extra_images": [], "main_price": 401.79, "tipo": "NORMAL"}, {"id": "CHJ-002", "name": "Chamarra Softshell", "variants": [{"color": "0", "file": null, "code": "CHJ-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 503.7, "tipo": "OUTLET", "nombre": "Chamarra Softshell Negro"}, {"color": "1", "file": null, "code": "CHJ-002-02", "label": "Gris", "hex": "#888", "precio": 384.83, "tipo": "NORMAL", "nombre": "Chamarra Softshell Gris"}], "extra_images": [], "main_price": 503.7, "tipo": "OUTLET"}, {"id": "CHJ-003", "name": "Chamarra Lluvia", "variants": [{"color": "0", "file": null, "code": "CHJ-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 281.25, "tipo": "NORMAL", "nombre": "Chamarra Lluvia Negro"}, {"color": "1", "file": null, "code": "CHJ-003-02", "label": "Azul", "hex": "#4A90D9", "precio": 426.96, "tipo": "NORMAL", "nombre": "Chamarra Lluvia Azul"}, {"color": "2", "file": null, "code": "CHJ-003-03", "label": "Rojo", "hex": "#E74C3C", "precio": 305.5, "tipo": "NORMAL", "nombre": "Chamarra Lluvia Rojo"}], "extra_images": [], "main_price": 281.25, "tipo": "NORMAL"}, {"id": "CHJ-004", "name": "Chamarra Invierno", "variants": [{"color": "0", "file": null, "code": "CHJ-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 573.16, "tipo": "NORMAL", "nombre": "Chamarra Invierno Negro"}, {"color": "1", "file": null, "code": "CHJ-004-02", "label": "Navy", "hex": "#1B3A6B", "precio": 398.84, "tipo": "PRECIO ÚNICO", "nombre": "Chamarra Invierno Navy"}], "extra_images": [], "main_price": 573.16, "tipo": "NORMAL"}, {"id": "CHJ-005", "name": "Chamarra Ejecutiva", "variants": [{"color": "0", "file": null, "code": "CHJ-005-01", "label": "Negro", "hex": "#1a1a1a", "precio": 521.36, "tipo": "OUTLET", "nombre": "Chamarra Ejecutiva Negro"}, {"color": "1", "file": null, "code": "CHJ-005-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 510.83, "tipo": "NORMAL", "nombre": "Chamarra Ejecutiva Azul Marino"}], "extra_images": [], "main_price": 521.36, "tipo": "OUTLET"}]}, {"id": "gorras", "label": "Gorras", "icon": "🧢", "real": false, "products": [{"id": "GOR-001", "name": "Gorra Snapback", "variants": [{"color": "0", "file": null, "code": "GOR-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 74.69, "tipo": "OUTLET", "nombre": "Gorra Snapback Negro"}, {"color": "1", "file": null, "code": "GOR-001-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 52.43, "tipo": "OUTLET", "nombre": "Gorra Snapback Blanco"}, {"color": "2", "file": null, "code": "GOR-001-03", "label": "Azul", "hex": "#4A90D9", "precio": 84.26, "tipo": "PRECIO ÚNICO", "nombre": "Gorra Snapback Azul"}, {"color": "3", "file": null, "code": "GOR-001-04", "label": "Rojo", "hex": "#E74C3C", "precio": 88.4, "tipo": "OUTLET", "nombre": "Gorra Snapback Rojo"}], "extra_images": [], "main_price": 74.69, "tipo": "OUTLET"}, {"id": "GOR-002", "name": "Gorra Trucker", "variants": [{"color": "0", "file": null, "code": "GOR-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 83.99, "tipo": "NORMAL", "nombre": "Gorra Trucker Negro"}, {"color": "1", "file": null, "code": "GOR-002-02", "label": "Gris", "hex": "#888", "precio": 82.08, "tipo": "PRECIO ÚNICO", "nombre": "Gorra Trucker Gris"}, {"color": "2", "file": null, "code": "GOR-002-03", "label": "Beige", "hex": "#C4A882", "precio": 94.78, "tipo": "NORMAL", "nombre": "Gorra Trucker Beige"}], "extra_images": [], "main_price": 83.99, "tipo": "NORMAL"}, {"id": "GOR-003", "name": "Gorra Flex Fit", "variants": [{"color": "0", "file": null, "code": "GOR-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 76.91, "tipo": "OUTLET", "nombre": "Gorra Flex Fit Negro"}, {"color": "1", "file": null, "code": "GOR-003-02", "label": "Navy", "hex": "#1B3A6B", "precio": 77.57, "tipo": "NORMAL", "nombre": "Gorra Flex Fit Navy"}, {"color": "2", "file": null, "code": "GOR-003-03", "label": "Azul", "hex": "#4A90D9", "precio": 66.23, "tipo": "NORMAL", "nombre": "Gorra Flex Fit Azul"}], "extra_images": [], "main_price": 76.91, "tipo": "OUTLET"}, {"id": "GOR-004", "name": "Gorra Dad Hat", "variants": [{"color": "0", "file": null, "code": "GOR-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 48.84, "tipo": "OUTLET", "nombre": "Gorra Dad Hat Negro"}, {"color": "1", "file": null, "code": "GOR-004-02", "label": "Beige", "hex": "#C4A882", "precio": 57.2, "tipo": "NORMAL", "nombre": "Gorra Dad Hat Beige"}, {"color": "2", "file": null, "code": "GOR-004-03", "label": "Verde", "hex": "#2d6a4f", "precio": 48.29, "tipo": "NORMAL", "nombre": "Gorra Dad Hat Verde"}], "extra_images": [], "main_price": 48.84, "tipo": "OUTLET"}, {"id": "GOR-005", "name": "Gorra 5 Panel", "variants": [{"color": "0", "file": null, "code": "GOR-005-01", "label": "Negro", "hex": "#1a1a1a", "precio": 50.7, "tipo": "NORMAL", "nombre": "Gorra 5 Panel Negro"}, {"color": "1", "file": null, "code": "GOR-005-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 74.67, "tipo": "NORMAL", "nombre": "Gorra 5 Panel Blanco"}, {"color": "2", "file": null, "code": "GOR-005-03", "label": "Azul", "hex": "#4A90D9", "precio": 61.54, "tipo": "NORMAL", "nombre": "Gorra 5 Panel Azul"}], "extra_images": [], "main_price": 50.7, "tipo": "NORMAL"}, {"id": "GOR-006", "name": "Gorra Running", "variants": [{"color": "0", "file": null, "code": "GOR-006-01", "label": "Negro", "hex": "#1a1a1a", "precio": 80.1, "tipo": "NORMAL", "nombre": "Gorra Running Negro"}, {"color": "1", "file": null, "code": "GOR-006-02", "label": "Azul", "hex": "#4A90D9", "precio": 74.27, "tipo": "OUTLET", "nombre": "Gorra Running Azul"}, {"color": "2", "file": null, "code": "GOR-006-03", "label": "Rosa", "hex": "#FF69B4", "precio": 75.93, "tipo": "NORMAL", "nombre": "Gorra Running Rosa"}], "extra_images": [], "main_price": 80.1, "tipo": "NORMAL"}]}, {"id": "bucket-hats", "label": "Bucket Hats", "icon": "🪣", "real": false, "products": [{"id": "BUK-001", "name": "Bucket Hat Classic", "variants": [{"color": "0", "file": null, "code": "BUK-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 90.31, "tipo": "PRECIO ÚNICO", "nombre": "Bucket Hat Classic Negro"}, {"color": "1", "file": null, "code": "BUK-001-02", "label": "Beige", "hex": "#C4A882", "precio": 63.57, "tipo": "NORMAL", "nombre": "Bucket Hat Classic Beige"}, {"color": "2", "file": null, "code": "BUK-001-03", "label": "Azul", "hex": "#4A90D9", "precio": 84.65, "tipo": "NORMAL", "nombre": "Bucket Hat Classic Azul"}], "extra_images": [], "main_price": 90.31, "tipo": "PRECIO ÚNICO"}, {"id": "BUK-002", "name": "Bucket Hat Reversible", "variants": [{"color": "0", "file": null, "code": "BUK-002-01", "label": "Negro/Beige", "hex": "#1a1a1a", "precio": 91.18, "tipo": "PRECIO ÚNICO", "nombre": "Bucket Hat Reversible Negro/Beige"}, {"color": "1", "file": null, "code": "BUK-002-02", "label": "Azul/Blanco", "hex": "#4A90D9", "precio": 113.19, "tipo": "NORMAL", "nombre": "Bucket Hat Reversible Azul/Blanco"}], "extra_images": [], "main_price": 91.18, "tipo": "PRECIO ÚNICO"}, {"id": "BUK-003", "name": "Bucket Hat Denim", "variants": [{"color": "0", "file": null, "code": "BUK-003-01", "label": "Azul Denim", "hex": "#4A90D9", "precio": 98.67, "tipo": "NORMAL", "nombre": "Bucket Hat Denim Azul Denim"}, {"color": "1", "file": null, "code": "BUK-003-02", "label": "Negro", "hex": "#1a1a1a", "precio": 68.03, "tipo": "NORMAL", "nombre": "Bucket Hat Denim Negro"}], "extra_images": [], "main_price": 98.67, "tipo": "NORMAL"}, {"id": "BUK-004", "name": "Bucket Hat Nylon", "variants": [{"color": "0", "file": null, "code": "BUK-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 100.03, "tipo": "NORMAL", "nombre": "Bucket Hat Nylon Negro"}, {"color": "1", "file": null, "code": "BUK-004-02", "label": "Verde Militar", "hex": "#4a5c3a", "precio": 72.43, "tipo": "NORMAL", "nombre": "Bucket Hat Nylon Verde Militar"}, {"color": "2", "file": null, "code": "BUK-004-03", "label": "Beige", "hex": "#C4A882", "precio": 86.81, "tipo": "NORMAL", "nombre": "Bucket Hat Nylon Beige"}], "extra_images": [], "main_price": 100.03, "tipo": "NORMAL"}]}, {"id": "tote-bags", "label": "Tote Bags", "icon": "👜", "real": false, "products": [{"id": "TOT-001", "name": "Tote Bag Natural", "variants": [{"color": "0", "file": null, "code": "TOT-001-01", "label": "Natural", "hex": "#d4c5a9", "precio": 44.77, "tipo": "NORMAL", "nombre": "Tote Bag Natural Natural"}, {"color": "1", "file": null, "code": "TOT-001-02", "label": "Negro", "hex": "#1a1a1a", "precio": 46.19, "tipo": "NORMAL", "nombre": "Tote Bag Natural Negro"}, {"color": "2", "file": null, "code": "TOT-001-03", "label": "Azul", "hex": "#4A90D9", "precio": 45.51, "tipo": "OUTLET", "nombre": "Tote Bag Natural Azul"}], "extra_images": [], "main_price": 44.77, "tipo": "NORMAL"}, {"id": "TOT-002", "name": "Tote Bag Canvas 10oz", "variants": [{"color": "0", "file": null, "code": "TOT-002-01", "label": "Natural", "hex": "#d4c5a9", "precio": 41.33, "tipo": "OUTLET", "nombre": "Tote Bag Canvas 10oz Natural"}, {"color": "1", "file": null, "code": "TOT-002-02", "label": "Negro", "hex": "#1a1a1a", "precio": 66.42, "tipo": "NORMAL", "nombre": "Tote Bag Canvas 10oz Negro"}], "extra_images": [], "main_price": 41.33, "tipo": "OUTLET"}, {"id": "TOT-003", "name": "Tote Bag Largo", "variants": [{"color": "0", "file": null, "code": "TOT-003-01", "label": "Natural", "hex": "#d4c5a9", "precio": 65.57, "tipo": "NORMAL", "nombre": "Tote Bag Largo Natural"}, {"color": "1", "file": null, "code": "TOT-003-02", "label": "Verde", "hex": "#2d6a4f", "precio": 40.49, "tipo": "PRECIO ÚNICO", "nombre": "Tote Bag Largo Verde"}, {"color": "2", "file": null, "code": "TOT-003-03", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 50.88, "tipo": "PRECIO ÚNICO", "nombre": "Tote Bag Largo Azul Marino"}], "extra_images": [], "main_price": 65.57, "tipo": "NORMAL"}, {"id": "TOT-004", "name": "Tote Bag Premium", "variants": [{"color": "0", "file": null, "code": "TOT-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 81.1, "tipo": "NORMAL", "nombre": "Tote Bag Premium Negro"}, {"color": "1", "file": null, "code": "TOT-004-02", "label": "Natural", "hex": "#d4c5a9", "precio": 60.16, "tipo": "PRECIO ÚNICO", "nombre": "Tote Bag Premium Natural"}, {"color": "2", "file": null, "code": "TOT-004-03", "label": "Beige", "hex": "#C4A882", "precio": 55.61, "tipo": "PRECIO ÚNICO", "nombre": "Tote Bag Premium Beige"}], "extra_images": [], "main_price": 81.1, "tipo": "NORMAL"}]}, {"id": "mochila", "label": "Mochila", "icon": "🎒", "real": false, "products": [{"id": "MOC-001", "name": "Mochila Urban 20L", "variants": [{"color": "0", "file": null, "code": "MOC-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 219.93, "tipo": "OUTLET", "nombre": "Mochila Urban 20L Negro"}, {"color": "1", "file": null, "code": "MOC-001-02", "label": "Gris", "hex": "#888", "precio": 272.66, "tipo": "PRECIO ÚNICO", "nombre": "Mochila Urban 20L Gris"}, {"color": "2", "file": null, "code": "MOC-001-03", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 201.67, "tipo": "NORMAL", "nombre": "Mochila Urban 20L Azul Marino"}], "extra_images": [], "main_price": 219.93, "tipo": "OUTLET"}, {"id": "MOC-002", "name": "Mochila Laptop 15\"", "variants": [{"color": "0", "file": null, "code": "MOC-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 254.83, "tipo": "NORMAL", "nombre": "Mochila Laptop 15\" Negro"}, {"color": "1", "file": null, "code": "MOC-002-02", "label": "Gris", "hex": "#888", "precio": 312.67, "tipo": "OUTLET", "nombre": "Mochila Laptop 15\" Gris"}], "extra_images": [], "main_price": 254.83, "tipo": "NORMAL"}, {"id": "MOC-003", "name": "Mochila Rolltop", "variants": [{"color": "0", "file": null, "code": "MOC-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 203.84, "tipo": "NORMAL", "nombre": "Mochila Rolltop Negro"}, {"color": "1", "file": null, "code": "MOC-003-02", "label": "Verde Militar", "hex": "#4a5c3a", "precio": 203.29, "tipo": "OUTLET", "nombre": "Mochila Rolltop Verde Militar"}], "extra_images": [], "main_price": 203.84, "tipo": "NORMAL"}, {"id": "MOC-004", "name": "Mochila Ligera", "variants": [{"color": "0", "file": null, "code": "MOC-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 197.21, "tipo": "OUTLET", "nombre": "Mochila Ligera Negro"}, {"color": "1", "file": null, "code": "MOC-004-02", "label": "Azul", "hex": "#4A90D9", "precio": 158.89, "tipo": "OUTLET", "nombre": "Mochila Ligera Azul"}, {"color": "2", "file": null, "code": "MOC-004-03", "label": "Rojo", "hex": "#E74C3C", "precio": 149.61, "tipo": "NORMAL", "nombre": "Mochila Ligera Rojo"}], "extra_images": [], "main_price": 197.21, "tipo": "OUTLET"}, {"id": "MOC-005", "name": "Mochila Ejecutiva", "variants": [{"color": "0", "file": null, "code": "MOC-005-01", "label": "Negro", "hex": "#1a1a1a", "precio": 261.65, "tipo": "NORMAL", "nombre": "Mochila Ejecutiva Negro"}, {"color": "1", "file": null, "code": "MOC-005-02", "label": "Navy", "hex": "#1B3A6B", "precio": 364.79, "tipo": "NORMAL", "nombre": "Mochila Ejecutiva Navy"}], "extra_images": [], "main_price": 261.65, "tipo": "NORMAL"}]}, {"id": "lonchera", "label": "Lonchera", "icon": "🥡", "real": false, "products": [{"id": "LON-001", "name": "Lonchera Térmica", "variants": [{"color": "0", "file": null, "code": "LON-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 97.21, "tipo": "OUTLET", "nombre": "Lonchera Térmica Negro"}, {"color": "1", "file": null, "code": "LON-001-02", "label": "Azul", "hex": "#4A90D9", "precio": 88.54, "tipo": "OUTLET", "nombre": "Lonchera Térmica Azul"}, {"color": "2", "file": null, "code": "LON-001-03", "label": "Rojo", "hex": "#E74C3C", "precio": 77.19, "tipo": "NORMAL", "nombre": "Lonchera Térmica Rojo"}], "extra_images": [], "main_price": 97.21, "tipo": "OUTLET"}, {"id": "LON-002", "name": "Lonchera Bento", "variants": [{"color": "0", "file": null, "code": "LON-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 110.15, "tipo": "OUTLET", "nombre": "Lonchera Bento Negro"}, {"color": "1", "file": null, "code": "LON-002-02", "label": "Gris", "hex": "#888", "precio": 118.91, "tipo": "NORMAL", "nombre": "Lonchera Bento Gris"}, {"color": "2", "file": null, "code": "LON-002-03", "label": "Verde", "hex": "#2d6a4f", "precio": 141.08, "tipo": "NORMAL", "nombre": "Lonchera Bento Verde"}], "extra_images": [], "main_price": 110.15, "tipo": "OUTLET"}, {"id": "LON-003", "name": "Lonchera Urban", "variants": [{"color": "0", "file": null, "code": "LON-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 116.83, "tipo": "NORMAL", "nombre": "Lonchera Urban Negro"}, {"color": "1", "file": null, "code": "LON-003-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 93.13, "tipo": "PRECIO ÚNICO", "nombre": "Lonchera Urban Azul Marino"}], "extra_images": [], "main_price": 116.83, "tipo": "NORMAL"}, {"id": "LON-004", "name": "Lonchera Cooler", "variants": [{"color": "0", "file": null, "code": "LON-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 98.51, "tipo": "NORMAL", "nombre": "Lonchera Cooler Negro"}, {"color": "1", "file": null, "code": "LON-004-02", "label": "Azul", "hex": "#4A90D9", "precio": 119.72, "tipo": "NORMAL", "nombre": "Lonchera Cooler Azul"}, {"color": "2", "file": null, "code": "LON-004-03", "label": "Beige", "hex": "#C4A882", "precio": 90.61, "tipo": "OUTLET", "nombre": "Lonchera Cooler Beige"}], "extra_images": [], "main_price": 98.51, "tipo": "NORMAL"}]}, {"id": "lanyard", "label": "Lanyard", "icon": "🪪", "real": false, "products": [{"id": "LAN-001", "name": "Lanyard Sublimado", "variants": [{"color": "0", "file": null, "code": "LAN-001-01", "label": "Personalizable", "hex": "#00C0E0", "precio": 34.97, "tipo": "NORMAL", "nombre": "Lanyard Sublimado Personalizable"}], "extra_images": [], "main_price": 34.97, "tipo": "NORMAL"}, {"id": "LAN-002", "name": "Lanyard Tejido", "variants": [{"color": "0", "file": null, "code": "LAN-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 23.47, "tipo": "NORMAL", "nombre": "Lanyard Tejido Negro"}, {"color": "1", "file": null, "code": "LAN-002-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 32.12, "tipo": "NORMAL", "nombre": "Lanyard Tejido Azul Marino"}, {"color": "2", "file": null, "code": "LAN-002-03", "label": "Rojo", "hex": "#E74C3C", "precio": 40.67, "tipo": "NORMAL", "nombre": "Lanyard Tejido Rojo"}], "extra_images": [], "main_price": 23.47, "tipo": "NORMAL"}, {"id": "LAN-003", "name": "Lanyard con Clip", "variants": [{"color": "0", "file": null, "code": "LAN-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 35.83, "tipo": "NORMAL", "nombre": "Lanyard con Clip Negro"}, {"color": "1", "file": null, "code": "LAN-003-02", "label": "Azul", "hex": "#4A90D9", "precio": 25.13, "tipo": "PRECIO ÚNICO", "nombre": "Lanyard con Clip Azul"}], "extra_images": [], "main_price": 35.83, "tipo": "NORMAL"}, {"id": "LAN-004", "name": "Lanyard Breakaway", "variants": [{"color": "0", "file": null, "code": "LAN-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 41.67, "tipo": "NORMAL", "nombre": "Lanyard Breakaway Negro"}, {"color": "1", "file": null, "code": "LAN-004-02", "label": "Personalizable", "hex": "#00C0E0", "precio": 37.23, "tipo": "OUTLET", "nombre": "Lanyard Breakaway Personalizable"}], "extra_images": [], "main_price": 41.67, "tipo": "NORMAL"}]}, {"id": "pines-metalicos", "label": "Pines Metálicos", "icon": "📌", "real": false, "products": [{"id": "PIN-001", "name": "Pin Metálico Redondo", "variants": [{"color": "0", "file": null, "code": "PIN-001-01", "label": "Dorado", "hex": "#FFD700", "precio": 15.12, "tipo": "OUTLET", "nombre": "Pin Metálico Redondo Dorado"}, {"color": "1", "file": null, "code": "PIN-001-02", "label": "Plateado", "hex": "#C0C0C0", "precio": 19.49, "tipo": "NORMAL", "nombre": "Pin Metálico Redondo Plateado"}, {"color": "2", "file": null, "code": "PIN-001-03", "label": "Negro", "hex": "#1a1a1a", "precio": 29.08, "tipo": "NORMAL", "nombre": "Pin Metálico Redondo Negro"}], "extra_images": [], "main_price": 15.12, "tipo": "OUTLET"}, {"id": "PIN-002", "name": "Pin Metálico Cuadrado", "variants": [{"color": "0", "file": null, "code": "PIN-002-01", "label": "Dorado", "hex": "#FFD700", "precio": 22.5, "tipo": "NORMAL", "nombre": "Pin Metálico Cuadrado Dorado"}, {"color": "1", "file": null, "code": "PIN-002-02", "label": "Plateado", "hex": "#C0C0C0", "precio": 30.62, "tipo": "NORMAL", "nombre": "Pin Metálico Cuadrado Plateado"}], "extra_images": [], "main_price": 22.5, "tipo": "NORMAL"}, {"id": "PIN-003", "name": "Pin Metálico Custom", "variants": [{"color": "0", "file": null, "code": "PIN-003-01", "label": "Dorado", "hex": "#FFD700", "precio": 27.45, "tipo": "OUTLET", "nombre": "Pin Metálico Custom Dorado"}, {"color": "1", "file": null, "code": "PIN-003-02", "label": "Plateado", "hex": "#C0C0C0", "precio": 26.21, "tipo": "NORMAL", "nombre": "Pin Metálico Custom Plateado"}, {"color": "2", "file": null, "code": "PIN-003-03", "label": "Cobre", "hex": "#B87333", "precio": 26.07, "tipo": "NORMAL", "nombre": "Pin Metálico Custom Cobre"}], "extra_images": [], "main_price": 27.45, "tipo": "OUTLET"}, {"id": "PIN-004", "name": "Pin Esmalte Duro", "variants": [{"color": "0", "file": null, "code": "PIN-004-01", "label": "Personalizable", "hex": "#00C0E0", "precio": 41.65, "tipo": "NORMAL", "nombre": "Pin Esmalte Duro Personalizable"}], "extra_images": [], "main_price": 41.65, "tipo": "NORMAL"}, {"id": "PIN-005", "name": "Pin Esmalte Suave", "variants": [{"color": "0", "file": null, "code": "PIN-005-01", "label": "Personalizable", "hex": "#E6007E", "precio": 47.63, "tipo": "NORMAL", "nombre": "Pin Esmalte Suave Personalizable"}], "extra_images": [], "main_price": 47.63, "tipo": "NORMAL"}]}, {"id": "pines-resina", "label": "Pines Resina", "icon": "🔮", "real": false, "products": [{"id": "PRE-001", "name": "Pin Resina Transparente", "variants": [{"color": "0", "file": null, "code": "PRE-001-01", "label": "Transparente", "hex": "#ccefff", "precio": 21.66, "tipo": "PRECIO ÚNICO", "nombre": "Pin Resina Transparente Transparente"}], "extra_images": [], "main_price": 21.66, "tipo": "PRECIO ÚNICO"}, {"id": "PRE-002", "name": "Pin Resina Color", "variants": [{"color": "0", "file": null, "code": "PRE-002-01", "label": "Azul", "hex": "#4A90D9", "precio": 38.59, "tipo": "NORMAL", "nombre": "Pin Resina Color Azul"}, {"color": "1", "file": null, "code": "PRE-002-02", "label": "Rojo", "hex": "#E74C3C", "precio": 22.07, "tipo": "NORMAL", "nombre": "Pin Resina Color Rojo"}, {"color": "2", "file": null, "code": "PRE-002-03", "label": "Verde", "hex": "#2d6a4f", "precio": 34.74, "tipo": "NORMAL", "nombre": "Pin Resina Color Verde"}, {"color": "3", "file": null, "code": "PRE-002-04", "label": "Rosa", "hex": "#FF69B4", "precio": 25.23, "tipo": "PRECIO ÚNICO", "nombre": "Pin Resina Color Rosa"}], "extra_images": [], "main_price": 38.59, "tipo": "NORMAL"}, {"id": "PRE-003", "name": "Pin Resina Glitter", "variants": [{"color": "0", "file": null, "code": "PRE-003-01", "label": "Dorado", "hex": "#FFD700", "precio": 37.69, "tipo": "PRECIO ÚNICO", "nombre": "Pin Resina Glitter Dorado"}, {"color": "1", "file": null, "code": "PRE-003-02", "label": "Plateado", "hex": "#C0C0C0", "precio": 37.9, "tipo": "NORMAL", "nombre": "Pin Resina Glitter Plateado"}, {"color": "2", "file": null, "code": "PRE-003-03", "label": "Multicolor", "hex": "#ff69b4", "precio": 26.73, "tipo": "NORMAL", "nombre": "Pin Resina Glitter Multicolor"}], "extra_images": [], "main_price": 37.69, "tipo": "PRECIO ÚNICO"}, {"id": "PRE-004", "name": "Pin Resina 3D", "variants": [{"color": "0", "file": null, "code": "PRE-004-01", "label": "Personalizable", "hex": "#00C0E0", "precio": 43.64, "tipo": "NORMAL", "nombre": "Pin Resina 3D Personalizable"}], "extra_images": [], "main_price": 43.64, "tipo": "NORMAL"}]}, {"id": "yoyos", "label": "Yoyos", "icon": "🪀", "real": false, "products": [{"id": "YOY-001", "name": "Yoyo Clásico", "variants": [{"color": "0", "file": null, "code": "YOY-001-01", "label": "Rojo", "hex": "#E74C3C", "precio": 39.56, "tipo": "NORMAL", "nombre": "Yoyo Clásico Rojo"}, {"color": "1", "file": null, "code": "YOY-001-02", "label": "Azul", "hex": "#4A90D9", "precio": 35.74, "tipo": "NORMAL", "nombre": "Yoyo Clásico Azul"}, {"color": "2", "file": null, "code": "YOY-001-03", "label": "Verde", "hex": "#2d6a4f", "precio": 32.71, "tipo": "NORMAL", "nombre": "Yoyo Clásico Verde"}, {"color": "3", "file": null, "code": "YOY-001-04", "label": "Amarillo", "hex": "#F1C40F", "precio": 47.47, "tipo": "NORMAL", "nombre": "Yoyo Clásico Amarillo"}], "extra_images": [], "main_price": 39.56, "tipo": "NORMAL"}, {"id": "YOY-002", "name": "Yoyo Metálico", "variants": [{"color": "0", "file": null, "code": "YOY-002-01", "label": "Plateado", "hex": "#C0C0C0", "precio": 58.87, "tipo": "NORMAL", "nombre": "Yoyo Metálico Plateado"}, {"color": "1", "file": null, "code": "YOY-002-02", "label": "Dorado", "hex": "#FFD700", "precio": 47.38, "tipo": "OUTLET", "nombre": "Yoyo Metálico Dorado"}, {"color": "2", "file": null, "code": "YOY-002-03", "label": "Negro", "hex": "#1a1a1a", "precio": 65.94, "tipo": "PRECIO ÚNICO", "nombre": "Yoyo Metálico Negro"}], "extra_images": [], "main_price": 58.87, "tipo": "NORMAL"}, {"id": "YOY-003", "name": "Yoyo Neón", "variants": [{"color": "0", "file": null, "code": "YOY-003-01", "label": "Verde Neón", "hex": "#39ff14", "precio": 54.29, "tipo": "NORMAL", "nombre": "Yoyo Neón Verde Neón"}, {"color": "1", "file": null, "code": "YOY-003-02", "label": "Naranja", "hex": "#FF7F00", "precio": 53.0, "tipo": "NORMAL", "nombre": "Yoyo Neón Naranja"}, {"color": "2", "file": null, "code": "YOY-003-03", "label": "Rosa", "hex": "#FF69B4", "precio": 51.34, "tipo": "NORMAL", "nombre": "Yoyo Neón Rosa"}], "extra_images": [], "main_price": 54.29, "tipo": "NORMAL"}, {"id": "YOY-004", "name": "Yoyo Madera", "variants": [{"color": "0", "file": null, "code": "YOY-004-01", "label": "Natural", "hex": "#8B4513", "precio": 54.68, "tipo": "NORMAL", "nombre": "Yoyo Madera Natural"}], "extra_images": [], "main_price": 54.68, "tipo": "NORMAL"}]}, {"id": "lanyard-con-yoyo", "label": "Lanyard con Yoyo", "icon": "🪀", "real": false, "products": [{"id": "LYY-001", "name": "Lanyard + Yoyo Set", "variants": [{"color": "0", "file": null, "code": "LYY-001-01", "label": "Rojo", "hex": "#E74C3C", "precio": 40.38, "tipo": "NORMAL", "nombre": "Lanyard + Yoyo Set Rojo"}, {"color": "1", "file": null, "code": "LYY-001-02", "label": "Azul", "hex": "#4A90D9", "precio": 58.47, "tipo": "PRECIO ÚNICO", "nombre": "Lanyard + Yoyo Set Azul"}, {"color": "2", "file": null, "code": "LYY-001-03", "label": "Verde", "hex": "#2d6a4f", "precio": 59.07, "tipo": "NORMAL", "nombre": "Lanyard + Yoyo Set Verde"}], "extra_images": [], "main_price": 40.38, "tipo": "NORMAL"}, {"id": "LYY-002", "name": "Lanyard + Yoyo Premium", "variants": [{"color": "0", "file": null, "code": "LYY-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 54.34, "tipo": "NORMAL", "nombre": "Lanyard + Yoyo Premium Negro"}, {"color": "1", "file": null, "code": "LYY-002-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 58.39, "tipo": "NORMAL", "nombre": "Lanyard + Yoyo Premium Azul Marino"}], "extra_images": [], "main_price": 54.34, "tipo": "NORMAL"}, {"id": "LYY-003", "name": "Lanyard + Yoyo Neón", "variants": [{"color": "0", "file": null, "code": "LYY-003-01", "label": "Naranja", "hex": "#FF7F00", "precio": 65.47, "tipo": "NORMAL", "nombre": "Lanyard + Yoyo Neón Naranja"}, {"color": "1", "file": null, "code": "LYY-003-02", "label": "Verde Neón", "hex": "#39ff14", "precio": 44.39, "tipo": "PRECIO ÚNICO", "nombre": "Lanyard + Yoyo Neón Verde Neón"}], "extra_images": [], "main_price": 65.47, "tipo": "NORMAL"}]}, {"id": "stress-balls", "label": "Stress Balls", "icon": "🔴", "real": false, "products": [{"id": "STR-001", "name": "Stress Ball Redondo", "variants": [{"color": "0", "file": null, "code": "STR-001-01", "label": "Rojo", "hex": "#E74C3C", "precio": 24.99, "tipo": "NORMAL", "nombre": "Stress Ball Redondo Rojo"}, {"color": "1", "file": null, "code": "STR-001-02", "label": "Azul", "hex": "#4A90D9", "precio": 22.46, "tipo": "NORMAL", "nombre": "Stress Ball Redondo Azul"}, {"color": "2", "file": null, "code": "STR-001-03", "label": "Verde", "hex": "#2d6a4f", "precio": 25.97, "tipo": "NORMAL", "nombre": "Stress Ball Redondo Verde"}, {"color": "3", "file": null, "code": "STR-001-04", "label": "Amarillo", "hex": "#F1C40F", "precio": 35.29, "tipo": "NORMAL", "nombre": "Stress Ball Redondo Amarillo"}], "extra_images": [], "main_price": 24.99, "tipo": "NORMAL"}, {"id": "STR-002", "name": "Stress Ball Corazón", "variants": [{"color": "0", "file": null, "code": "STR-002-01", "label": "Rojo", "hex": "#E74C3C", "precio": 27.73, "tipo": "OUTLET", "nombre": "Stress Ball Corazón Rojo"}, {"color": "1", "file": null, "code": "STR-002-02", "label": "Rosa", "hex": "#FF69B4", "precio": 28.79, "tipo": "OUTLET", "nombre": "Stress Ball Corazón Rosa"}, {"color": "2", "file": null, "code": "STR-002-03", "label": "Naranja", "hex": "#FF7F00", "precio": 27.29, "tipo": "NORMAL", "nombre": "Stress Ball Corazón Naranja"}], "extra_images": [], "main_price": 27.73, "tipo": "OUTLET"}, {"id": "STR-003", "name": "Stress Ball Cerebro", "variants": [{"color": "0", "file": null, "code": "STR-003-01", "label": "Rosa", "hex": "#FF69B4", "precio": 24.65, "tipo": "NORMAL", "nombre": "Stress Ball Cerebro Rosa"}, {"color": "1", "file": null, "code": "STR-003-02", "label": "Gris", "hex": "#888", "precio": 26.11, "tipo": "NORMAL", "nombre": "Stress Ball Cerebro Gris"}], "extra_images": [], "main_price": 24.65, "tipo": "NORMAL"}, {"id": "STR-004", "name": "Stress Ball Mundo", "variants": [{"color": "0", "file": null, "code": "STR-004-01", "label": "Azul/Verde", "hex": "#4A90D9", "precio": 20.77, "tipo": "OUTLET", "nombre": "Stress Ball Mundo Azul/Verde"}], "extra_images": [], "main_price": 20.77, "tipo": "OUTLET"}]}, {"id": "peluche", "label": "Peluche", "icon": "🧸", "real": false, "products": [{"id": "PEL-001", "name": "Peluche Oso", "variants": [{"color": "0", "file": null, "code": "PEL-001-01", "label": "Café", "hex": "#8B4513", "precio": 93.25, "tipo": "NORMAL", "nombre": "Peluche Oso Café"}, {"color": "1", "file": null, "code": "PEL-001-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 93.37, "tipo": "OUTLET", "nombre": "Peluche Oso Blanco"}, {"color": "2", "file": null, "code": "PEL-001-03", "label": "Negro", "hex": "#1a1a1a", "precio": 72.52, "tipo": "OUTLET", "nombre": "Peluche Oso Negro"}], "extra_images": [], "main_price": 93.25, "tipo": "NORMAL"}, {"id": "PEL-002", "name": "Peluche Conejo", "variants": [{"color": "0", "file": null, "code": "PEL-002-01", "label": "Blanco", "hex": "#e8e8e8", "precio": 83.31, "tipo": "NORMAL", "nombre": "Peluche Conejo Blanco"}, {"color": "1", "file": null, "code": "PEL-002-02", "label": "Gris", "hex": "#888", "precio": 119.61, "tipo": "NORMAL", "nombre": "Peluche Conejo Gris"}, {"color": "2", "file": null, "code": "PEL-002-03", "label": "Rosa", "hex": "#FF69B4", "precio": 106.39, "tipo": "OUTLET", "nombre": "Peluche Conejo Rosa"}], "extra_images": [], "main_price": 83.31, "tipo": "NORMAL"}, {"id": "PEL-003", "name": "Peluche Custom 15cm", "variants": [{"color": "0", "file": null, "code": "PEL-003-01", "label": "Personalizable", "hex": "#00C0E0", "precio": 136.51, "tipo": "NORMAL", "nombre": "Peluche Custom 15cm Personalizable"}], "extra_images": [], "main_price": 136.51, "tipo": "NORMAL"}, {"id": "PEL-004", "name": "Peluche Pingüino", "variants": [{"color": "0", "file": null, "code": "PEL-004-01", "label": "Negro/Blanco", "hex": "#1a1a1a", "precio": 100.5, "tipo": "NORMAL", "nombre": "Peluche Pingüino Negro/Blanco"}], "extra_images": [], "main_price": 100.5, "tipo": "NORMAL"}, {"id": "PEL-005", "name": "Peluche Mascota Custom", "variants": [{"color": "0", "file": null, "code": "PEL-005-01", "label": "Personalizable", "hex": "#E6007E", "precio": 214.89, "tipo": "NORMAL", "nombre": "Peluche Mascota Custom Personalizable"}], "extra_images": [], "main_price": 214.89, "tipo": "NORMAL"}]}, {"id": "fidget-toys", "label": "Fidget Toys", "icon": "🌀", "real": false, "products": [{"id": "FID-001", "name": "Spinner Metálico", "variants": [{"color": "0", "file": null, "code": "FID-001-01", "label": "Plateado", "hex": "#C0C0C0", "precio": 56.81, "tipo": "NORMAL", "nombre": "Spinner Metálico Plateado"}, {"color": "1", "file": null, "code": "FID-001-02", "label": "Negro", "hex": "#1a1a1a", "precio": 60.19, "tipo": "NORMAL", "nombre": "Spinner Metálico Negro"}, {"color": "2", "file": null, "code": "FID-001-03", "label": "Dorado", "hex": "#FFD700", "precio": 52.75, "tipo": "PRECIO ÚNICO", "nombre": "Spinner Metálico Dorado"}], "extra_images": [], "main_price": 56.81, "tipo": "NORMAL"}, {"id": "FID-002", "name": "Pop It Cuadrado", "variants": [{"color": "0", "file": null, "code": "FID-002-01", "label": "Azul", "hex": "#4A90D9", "precio": 33.15, "tipo": "NORMAL", "nombre": "Pop It Cuadrado Azul"}, {"color": "1", "file": null, "code": "FID-002-02", "label": "Rosa", "hex": "#FF69B4", "precio": 38.86, "tipo": "NORMAL", "nombre": "Pop It Cuadrado Rosa"}, {"color": "2", "file": null, "code": "FID-002-03", "label": "Verde", "hex": "#2d6a4f", "precio": 35.51, "tipo": "PRECIO ÚNICO", "nombre": "Pop It Cuadrado Verde"}, {"color": "3", "file": null, "code": "FID-002-04", "label": "Amarillo", "hex": "#F1C40F", "precio": 41.93, "tipo": "NORMAL", "nombre": "Pop It Cuadrado Amarillo"}], "extra_images": [], "main_price": 33.15, "tipo": "NORMAL"}, {"id": "FID-003", "name": "Cubo Antiestrés", "variants": [{"color": "0", "file": null, "code": "FID-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 64.62, "tipo": "NORMAL", "nombre": "Cubo Antiestrés Negro"}, {"color": "1", "file": null, "code": "FID-003-02", "label": "Azul", "hex": "#4A90D9", "precio": 56.24, "tipo": "NORMAL", "nombre": "Cubo Antiestrés Azul"}, {"color": "2", "file": null, "code": "FID-003-03", "label": "Rojo", "hex": "#E74C3C", "precio": 52.15, "tipo": "NORMAL", "nombre": "Cubo Antiestrés Rojo"}], "extra_images": [], "main_price": 64.62, "tipo": "NORMAL"}, {"id": "FID-004", "name": "Fidget Ring", "variants": [{"color": "0", "file": null, "code": "FID-004-01", "label": "Plateado", "hex": "#C0C0C0", "precio": 39.61, "tipo": "OUTLET", "nombre": "Fidget Ring Plateado"}, {"color": "1", "file": null, "code": "FID-004-02", "label": "Dorado", "hex": "#FFD700", "precio": 44.38, "tipo": "NORMAL", "nombre": "Fidget Ring Dorado"}, {"color": "2", "file": null, "code": "FID-004-03", "label": "Negro", "hex": "#1a1a1a", "precio": 40.55, "tipo": "PRECIO ÚNICO", "nombre": "Fidget Ring Negro"}], "extra_images": [], "main_price": 39.61, "tipo": "OUTLET"}]}, {"id": "cangurera", "label": "Cangurera", "icon": "👝", "real": false, "products": [{"id": "CAN-001", "name": "Cangurera Clásica", "variants": [{"color": "0", "file": null, "code": "CAN-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 132.29, "tipo": "OUTLET", "nombre": "Cangurera Clásica Negro"}, {"color": "1", "file": null, "code": "CAN-001-02", "label": "Gris", "hex": "#888", "precio": 118.12, "tipo": "NORMAL", "nombre": "Cangurera Clásica Gris"}, {"color": "2", "file": null, "code": "CAN-001-03", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 131.12, "tipo": "NORMAL", "nombre": "Cangurera Clásica Azul Marino"}], "extra_images": [], "main_price": 132.29, "tipo": "OUTLET"}, {"id": "CAN-002", "name": "Cangurera Slim", "variants": [{"color": "0", "file": null, "code": "CAN-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 108.5, "tipo": "OUTLET", "nombre": "Cangurera Slim Negro"}, {"color": "1", "file": null, "code": "CAN-002-02", "label": "Azul", "hex": "#4A90D9", "precio": 96.79, "tipo": "NORMAL", "nombre": "Cangurera Slim Azul"}, {"color": "2", "file": null, "code": "CAN-002-03", "label": "Rojo", "hex": "#E74C3C", "precio": 118.73, "tipo": "NORMAL", "nombre": "Cangurera Slim Rojo"}], "extra_images": [], "main_price": 108.5, "tipo": "OUTLET"}, {"id": "CAN-003", "name": "Cangurera Impermeable", "variants": [{"color": "0", "file": null, "code": "CAN-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 155.49, "tipo": "NORMAL", "nombre": "Cangurera Impermeable Negro"}, {"color": "1", "file": null, "code": "CAN-003-02", "label": "Verde Militar", "hex": "#4a5c3a", "precio": 96.83, "tipo": "NORMAL", "nombre": "Cangurera Impermeable Verde Militar"}], "extra_images": [], "main_price": 155.49, "tipo": "NORMAL"}, {"id": "CAN-004", "name": "Cangurera Premium", "variants": [{"color": "0", "file": null, "code": "CAN-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 188.71, "tipo": "OUTLET", "nombre": "Cangurera Premium Negro"}, {"color": "1", "file": null, "code": "CAN-004-02", "label": "Navy", "hex": "#1B3A6B", "precio": 177.98, "tipo": "NORMAL", "nombre": "Cangurera Premium Navy"}, {"color": "2", "file": null, "code": "CAN-004-03", "label": "Gris", "hex": "#888", "precio": 146.43, "tipo": "OUTLET", "nombre": "Cangurera Premium Gris"}], "extra_images": [], "main_price": 188.71, "tipo": "OUTLET"}]}, {"id": "termo-cilindrico-plastico", "label": "Termo Cilíndrico Plástico", "icon": "🧴", "real": false, "products": [{"id": "TCP-001", "name": "Termo Plástico 500ml", "variants": [{"color": "0", "file": null, "code": "TCP-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 44.61, "tipo": "PRECIO ÚNICO", "nombre": "Termo Plástico 500ml Negro"}, {"color": "1", "file": null, "code": "TCP-001-02", "label": "Azul", "hex": "#4A90D9", "precio": 54.81, "tipo": "NORMAL", "nombre": "Termo Plástico 500ml Azul"}, {"color": "2", "file": null, "code": "TCP-001-03", "label": "Rojo", "hex": "#E74C3C", "precio": 43.02, "tipo": "NORMAL", "nombre": "Termo Plástico 500ml Rojo"}, {"color": "3", "file": null, "code": "TCP-001-04", "label": "Blanco", "hex": "#e8e8e8", "precio": 68.35, "tipo": "NORMAL", "nombre": "Termo Plástico 500ml Blanco"}], "extra_images": [], "main_price": 44.61, "tipo": "PRECIO ÚNICO"}, {"id": "TCP-002", "name": "Termo Plástico 750ml", "variants": [{"color": "0", "file": null, "code": "TCP-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 76.14, "tipo": "NORMAL", "nombre": "Termo Plástico 750ml Negro"}, {"color": "1", "file": null, "code": "TCP-002-02", "label": "Azul Marino", "hex": "#1B3A6B", "precio": 52.04, "tipo": "OUTLET", "nombre": "Termo Plástico 750ml Azul Marino"}, {"color": "2", "file": null, "code": "TCP-002-03", "label": "Verde", "hex": "#2d6a4f", "precio": 63.58, "tipo": "OUTLET", "nombre": "Termo Plástico 750ml Verde"}], "extra_images": [], "main_price": 76.14, "tipo": "NORMAL"}, {"id": "TCP-003", "name": "Termo Deportivo", "variants": [{"color": "0", "file": null, "code": "TCP-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 51.47, "tipo": "NORMAL", "nombre": "Termo Deportivo Negro"}, {"color": "1", "file": null, "code": "TCP-003-02", "label": "Azul", "hex": "#4A90D9", "precio": 59.35, "tipo": "PRECIO ÚNICO", "nombre": "Termo Deportivo Azul"}, {"color": "2", "file": null, "code": "TCP-003-03", "label": "Rojo", "hex": "#E74C3C", "precio": 67.37, "tipo": "OUTLET", "nombre": "Termo Deportivo Rojo"}, {"color": "3", "file": null, "code": "TCP-003-04", "label": "Verde", "hex": "#2d6a4f", "precio": 64.63, "tipo": "PRECIO ÚNICO", "nombre": "Termo Deportivo Verde"}], "extra_images": [], "main_price": 51.47, "tipo": "NORMAL"}, {"id": "TCP-004", "name": "Termo Infusor", "variants": [{"color": "0", "file": null, "code": "TCP-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 82.57, "tipo": "OUTLET", "nombre": "Termo Infusor Negro"}, {"color": "1", "file": null, "code": "TCP-004-02", "label": "Transparente", "hex": "#ccefff", "precio": 74.2, "tipo": "OUTLET", "nombre": "Termo Infusor Transparente"}], "extra_images": [], "main_price": 82.57, "tipo": "OUTLET"}, {"id": "TCP-005", "name": "Termo Clip 600ml", "variants": [{"color": "0", "file": null, "code": "TCP-005-01", "label": "Negro", "hex": "#1a1a1a", "precio": 66.73, "tipo": "NORMAL", "nombre": "Termo Clip 600ml Negro"}, {"color": "1", "file": null, "code": "TCP-005-02", "label": "Azul", "hex": "#4A90D9", "precio": 79.23, "tipo": "PRECIO ÚNICO", "nombre": "Termo Clip 600ml Azul"}, {"color": "2", "file": null, "code": "TCP-005-03", "label": "Naranja", "hex": "#FF7F00", "precio": 66.9, "tipo": "NORMAL", "nombre": "Termo Clip 600ml Naranja"}], "extra_images": [], "main_price": 66.73, "tipo": "NORMAL"}]}, {"id": "termo-para-cafe", "label": "Termo para Café", "icon": "☕", "real": false, "products": [{"id": "TCF-001", "name": "Termo Café 350ml", "variants": [{"color": "0", "file": null, "code": "TCF-001-01", "label": "Negro", "hex": "#1a1a1a", "precio": 143.79, "tipo": "NORMAL", "nombre": "Termo Café 350ml Negro"}, {"color": "1", "file": null, "code": "TCF-001-02", "label": "Acero", "hex": "#C0C0C0", "precio": 138.61, "tipo": "OUTLET", "nombre": "Termo Café 350ml Acero"}, {"color": "2", "file": null, "code": "TCF-001-03", "label": "Rojo", "hex": "#E74C3C", "precio": 118.92, "tipo": "NORMAL", "nombre": "Termo Café 350ml Rojo"}], "extra_images": [], "main_price": 143.79, "tipo": "NORMAL"}, {"id": "TCF-002", "name": "Termo Café 500ml", "variants": [{"color": "0", "file": null, "code": "TCF-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 115.59, "tipo": "NORMAL", "nombre": "Termo Café 500ml Negro"}, {"color": "1", "file": null, "code": "TCF-002-02", "label": "Gris", "hex": "#888", "precio": 148.52, "tipo": "NORMAL", "nombre": "Termo Café 500ml Gris"}, {"color": "2", "file": null, "code": "TCF-002-03", "label": "Azul", "hex": "#4A90D9", "precio": 115.38, "tipo": "NORMAL", "nombre": "Termo Café 500ml Azul"}], "extra_images": [], "main_price": 115.59, "tipo": "NORMAL"}, {"id": "TCF-003", "name": "Travel Mug", "variants": [{"color": "0", "file": null, "code": "TCF-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 181.44, "tipo": "NORMAL", "nombre": "Travel Mug Negro"}, {"color": "1", "file": null, "code": "TCF-003-02", "label": "Acero", "hex": "#C0C0C0", "precio": 121.07, "tipo": "NORMAL", "nombre": "Travel Mug Acero"}, {"color": "2", "file": null, "code": "TCF-003-03", "label": "Rosé Gold", "hex": "#b5a4a4", "precio": 140.64, "tipo": "NORMAL", "nombre": "Travel Mug Rosé Gold"}], "extra_images": [], "main_price": 181.44, "tipo": "NORMAL"}, {"id": "TCF-004", "name": "Termo Wide Mouth", "variants": [{"color": "0", "file": null, "code": "TCF-004-01", "label": "Negro", "hex": "#1a1a1a", "precio": 183.58, "tipo": "NORMAL", "nombre": "Termo Wide Mouth Negro"}, {"color": "1", "file": null, "code": "TCF-004-02", "label": "Blanco", "hex": "#e8e8e8", "precio": 157.34, "tipo": "NORMAL", "nombre": "Termo Wide Mouth Blanco"}, {"color": "2", "file": null, "code": "TCF-004-03", "label": "Verde", "hex": "#2d6a4f", "precio": 168.84, "tipo": "PRECIO ÚNICO", "nombre": "Termo Wide Mouth Verde"}], "extra_images": [], "main_price": 183.58, "tipo": "NORMAL"}, {"id": "TCF-005", "name": "Termo Café Bambú", "variants": [{"color": "0", "file": null, "code": "TCF-005-01", "label": "Natural", "hex": "#d4c5a9", "precio": 104.98, "tipo": "PRECIO ÚNICO", "nombre": "Termo Café Bambú Natural"}, {"color": "1", "file": null, "code": "TCF-005-02", "label": "Negro", "hex": "#1a1a1a", "precio": 131.16, "tipo": "OUTLET", "nombre": "Termo Café Bambú Negro"}], "extra_images": [], "main_price": 104.98, "tipo": "PRECIO ÚNICO"}]}, {"id": "taza", "label": "Taza", "icon": "☕", "real": false, "products": [{"id": "TAZ-001", "name": "Taza Cerámica 325ml", "variants": [{"color": "0", "file": null, "code": "TAZ-001-01", "label": "Blanco", "hex": "#e8e8e8", "precio": 63.38, "tipo": "NORMAL", "nombre": "Taza Cerámica 325ml Blanco"}, {"color": "1", "file": null, "code": "TAZ-001-02", "label": "Negro", "hex": "#1a1a1a", "precio": 60.7, "tipo": "OUTLET", "nombre": "Taza Cerámica 325ml Negro"}, {"color": "2", "file": null, "code": "TAZ-001-03", "label": "Azul", "hex": "#4A90D9", "precio": 46.41, "tipo": "NORMAL", "nombre": "Taza Cerámica 325ml Azul"}], "extra_images": [], "main_price": 63.38, "tipo": "NORMAL"}, {"id": "TAZ-002", "name": "Taza Mágica", "variants": [{"color": "0", "file": null, "code": "TAZ-002-01", "label": "Negro", "hex": "#1a1a1a", "precio": 82.71, "tipo": "NORMAL", "nombre": "Taza Mágica Negro"}, {"color": "1", "file": null, "code": "TAZ-002-02", "label": "Azul", "hex": "#4A90D9", "precio": 75.14, "tipo": "PRECIO ÚNICO", "nombre": "Taza Mágica Azul"}], "extra_images": [], "main_price": 82.71, "tipo": "NORMAL"}, {"id": "TAZ-003", "name": "Taza Travel Acero", "variants": [{"color": "0", "file": null, "code": "TAZ-003-01", "label": "Negro", "hex": "#1a1a1a", "precio": 107.29, "tipo": "OUTLET", "nombre": "Taza Travel Acero Negro"}, {"color": "1", "file": null, "code": "TAZ-003-02", "label": "Acero", "hex": "#C0C0C0", "precio": 122.99, "tipo": "NORMAL", "nombre": "Taza Travel Acero Acero"}, {"color": "2", "file": null, "code": "TAZ-003-03", "label": "Rojo", "hex": "#E74C3C", "precio": 104.29, "tipo": "NORMAL", "nombre": "Taza Travel Acero Rojo"}], "extra_images": [], "main_price": 107.29, "tipo": "OUTLET"}, {"id": "TAZ-004", "name": "Taza Enamel", "variants": [{"color": "0", "file": null, "code": "TAZ-004-01", "label": "Blanco/Azul", "hex": "#e8e8e8", "precio": 74.61, "tipo": "NORMAL", "nombre": "Taza Enamel Blanco/Azul"}, {"color": "1", "file": null, "code": "TAZ-004-02", "label": "Negro/Blanco", "hex": "#1a1a1a", "precio": 72.5, "tipo": "PRECIO ÚNICO", "nombre": "Taza Enamel Negro/Blanco"}], "extra_images": [], "main_price": 74.61, "tipo": "NORMAL"}, {"id": "TAZ-005", "name": "Taza Porcelana", "variants": [{"color": "0", "file": null, "code": "TAZ-005-01", "label": "Blanco", "hex": "#e8e8e8", "precio": 65.35, "tipo": "PRECIO ÚNICO", "nombre": "Taza Porcelana Blanco"}, {"color": "1", "file": null, "code": "TAZ-005-02", "label": "Beige", "hex": "#C4A882", "precio": 72.18, "tipo": "OUTLET", "nombre": "Taza Porcelana Beige"}], "extra_images": [], "main_price": 65.35, "tipo": "PRECIO ÚNICO"}]}];
+const IMG_BASE = './Audifonos/';
+
+// ── State ─────────────────────────────────────────────────────────────────
+let currentCatId = 'audifonos';
+let currentFilter = 'all';
+let currentSearch = '';
+let currentModalProd = null;
+let currentModalVariant = 0;
+let cart = []; // {id, catId, prodIdx, varIdx, name, code, color, colorHex, file, precio, icon}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+const fmt = p => p!=null ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(p) : null;
+const badgeHtml = tipo => {
+  if (tipo==='OUTLET') return '<span class="badge badge-outlet">Outlet</span>';
+  if (tipo==='PRECIO ÚNICO') return '<span class="badge badge-unico">Precio Único</span>';
+  return '';
+};
+const currentCat = () => ALL_CATS.find(c=>c.id===currentCatId);
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const aside = document.getElementById('sidebar');
+  let html = '<div class="sidebar-title">Categorías</div>';
+  ALL_CATS.forEach(cat => {
+    const v = cat.products.reduce((s,p)=>s+p.variants.filter(x=>x.color!==null).length,0);
+    html += `<div class="nav-item${cat.id===currentCatId?' active':''}${cat.real?'':' nav-ph'}"
+      onclick="switchCat('${cat.id}')" title="${cat.real?cat.label:'Placeholder — fotos próximamente'}">
+      <span class="nav-icon">${cat.icon}</span>
+      <span>${cat.label}</span>
+      <span class="nav-count">${v}</span>
+    </div>`;
+  });
+  aside.innerHTML = html;
+}
+
+// ── Switch category ───────────────────────────────────────────────────────
+function switchCat(catId) {
+  currentCatId = catId;
+  currentFilter = 'all';
+  currentSearch = '';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.filter==='all'));
+  buildSidebar();
+  updateHero();
+  renderGrid();
+}
+
+// ── Hero ──────────────────────────────────────────────────────────────────
+function updateHero() {
+  const cat = currentCat();
+  const colored = cat.products.reduce((s,p)=>s+p.variants.filter(v=>v.color!==null).length,0);
+  const outlet  = cat.products.filter(p=>p.tipo==='OUTLET').length;
+  document.getElementById('heroBadge').innerHTML = `${cat.icon} ${cat.label}`;
+  document.getElementById('heroTitle').innerHTML = `<span>${cat.label}</span>`;
+  document.getElementById('heroDesc').textContent = cat.real
+    ? 'Catálogo de productos personalizables. Precios LAB Guadalajara — Vigencia junio 2026.'
+    : 'Fotos y nombres referenciales — próximamente con fotografía real de producto.';
+  document.getElementById('statModelos').textContent = cat.products.length;
+  document.getElementById('statVariantes').textContent = colored;
+  document.getElementById('statOutlet').textContent = outlet;
+}
+
+// ── Cart ──────────────────────────────────────────────────────────────────
+function cartKey(catId, prodIdx, varIdx) { return `${catId}:${prodIdx}:${varIdx}`; }
+
+function addToCart(catId, prodIdx, varIdx) {
+  const cat = ALL_CATS.find(c=>c.id===catId);
+  const p   = cat.products[prodIdx];
+  const colored = p.variants.filter(v=>v.color!==null);
+  const v   = colored[varIdx] || colored[0];
+  const key = cartKey(catId, prodIdx, varIdx);
+  const existing = cart.find(i=>i.key===key);
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({
+      key, catId, prodIdx, varIdx,
+      name: v.nombre || p.name,
+      code: v.code,
+      color: v.label,
+      colorHex: v.hex,
+      file: v.file,
+      precio: v.precio,
+      icon: cat.icon,
+      qty: 1
+    });
+  }
+  updateCartBadge();
+  renderCart();
+  showToast(`✔ ${v.nombre||p.name} agregado`);
+  // pop badge animation
+  const badge = document.getElementById('cartBadge');
+  badge.classList.remove('pop');
+  void badge.offsetWidth;
+  badge.classList.add('pop');
+  setTimeout(()=>badge.classList.remove('pop'), 300);
+}
+
+function removeFromCart(key) {
+  cart = cart.filter(i=>i.key!==key);
+  updateCartBadge();
+  renderCart();
+}
+
+function changeQty(key, delta) {
+  const item = cart.find(i=>i.key===key);
+  if (!item) return;
+  item.qty = Math.max(1, item.qty + delta);
+  renderCart();
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  const total = cart.reduce((s,i)=>s+i.qty,0);
+  badge.textContent = total;
+  badge.classList.toggle('hidden', total===0);
+}
+
+function openCart() {
+  document.getElementById('cartOverlay').classList.add('open');
+  document.getElementById('cartDrawer').classList.add('open');
+  document.body.style.overflow='hidden';
+  renderCart();
+}
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function renderCart() {
+  const body   = document.getElementById('cartBody');
+  const footer = document.getElementById('cartFooter');
+  if (cart.length===0) {
+    body.innerHTML = `<div class="cart-empty">
+      <span class="cart-empty-icon">🛒</span>
+      <p>Tu cotización está vacía.<br/>Agrega productos para comenzar.</p>
+    </div>`;
+    footer.innerHTML = '';
+    return;
+  }
+
+  let totalKnown = 0, hasUnknown = false;
+  let html = '';
+  cart.forEach(item => {
+    const priceTotal = item.precio ? fmt(item.precio * item.qty) : null;
+    if (item.precio) totalKnown += item.precio * item.qty;
+    else hasUnknown = true;
+    const imgHtml = item.file
+      ? `<img src="${IMG_BASE}${item.file}" alt=""/>`
+      : `<span class="ph-icon">${item.icon}</span>`;
+    html += `<div class="cart-item">
+      <div class="ci-img">${imgHtml}</div>
+      <div class="ci-info">
+        <div class="ci-name">${item.name}</div>
+        <div class="ci-code">${item.code}</div>
+        <div class="ci-color">
+          <span class="ci-colordot" style="background:${item.colorHex};${item.colorHex==='#e8e8e8'?'border:1px solid #ccc':''}"></span>
+          ${item.color}
+        </div>
+        <div class="ci-bottom">
+          <div class="ci-qty">
+            <button class="qty-btn" onclick="changeQty('${item.key}',-1)">−</button>
+            <span class="qty-val">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty('${item.key}',1)">+</button>
+          </div>
+          <div class="ci-price ${!item.precio?'na':''}">${priceTotal || 'Consultar'}</div>
+        </div>
+      </div>
+      <button class="ci-remove" onclick="removeFromCart('${item.key}')" title="Eliminar">✕</button>
+    </div>`;
+  });
+  body.innerHTML = html;
+
+  const totalItems = cart.reduce((s,i)=>s+i.qty,0);
+  footer.innerHTML = `
+    <div class="cart-total-row"><span class="cart-total-label">Artículos</span><span class="cart-total-val">${totalItems}</span></div>
+    <div class="cart-total-row" style="margin-bottom:8px">
+      <span class="cart-total-label main">Subtotal estimado</span>
+      <span class="cart-total-val main">${fmt(totalKnown)}</span>
+    </div>
+    ${hasUnknown ? '<p class="cart-note">⚠️ Algunos productos requieren cotización manual. Tu ejecutivo te enviará el desglose completo.</p>' : '<p class="cart-note">Precios base MXN. Mínimos y personalización a confirmar con tu ejecutivo.</p>'}
+    <button class="btn-quote" onclick="sendQuote()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11 19.79 19.79 0 01.1 2.38 2 2 0 012.08.2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.09a16 16 0 006 6l1.06-1.06a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 15.27z"/></svg>
+      Enviar cotización
+    </button>
+    <button class="btn-clear" onclick="clearCart()">Vaciar cotización</button>`;
+}
+
+function clearCart() {
+  if (!confirm('¿Vaciar toda la cotización?')) return;
+  cart = [];
+  updateCartBadge();
+  renderCart();
+}
+
+function sendQuote() {
+  const lines = cart.map(i=>`• ${i.qty}x ${i.name} (${i.code}) - ${i.precio ? fmt(i.precio*i.qty) : 'Consultar'}`).join('\n');
+  alert(`¡Solicitud enviada a Canvas Media!\n\nResumen:\n${lines}\n\nTu ejecutivo te contactará pronto.`);
+}
+
+// ── Grid ──────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const cat  = currentCat();
+  const grid = document.getElementById('productGrid');
+  const empty= document.getElementById('emptyState');
+  grid.innerHTML='';
+  const search = currentSearch.toLowerCase();
+  let shown=0;
+
+  cat.products.forEach((p,idx)=>{
+    const colored = p.variants.filter(v=>v.color!==null);
+    if (!colored.length) return;
+    const mv = colored[0];
+    const tipo = p.tipo || mv.tipo || 'NORMAL';
+    if (currentFilter!=='all' && tipo!==currentFilter) return;
+    if (search && !p.name.toLowerCase().includes(search) && !p.id.toLowerCase().includes(search)) return;
+    shown++;
+
+    const dots = colored.length>1 ? colored.map((v,vi)=>
+      `<div class="variant-dot${vi===0?' active':''}"
+        style="background:${v.hex};${v.hex==='#e8e8e8'?'box-shadow:inset 0 0 0 1px #ccc':''}"
+        title="${v.label}" onclick="switchVariant(event,'${cat.id}',${idx},${vi})"></div>`
+    ).join('') : '';
+
+    const imgHtml = mv.file
+      ? `<img id="ci-${cat.id}-${idx}" src="${IMG_BASE}${mv.file}" alt="${p.name}" loading="lazy"/>`
+      : `<div id="ci-${cat.id}-${idx}" class="placeholder-img"><span class="ph-icon">${cat.icon}</span><span class="ph-label">Foto próximamente</span></div>`;
+
+    const priceHtml = mv.precio
+      ? `<div><div class="price" id="cp-${cat.id}-${idx}">${fmt(mv.precio)}</div><div class="price-sub">Precio base MXN</div></div>`
+      : `<div class="price-na">Consultar precio</div>`;
+
+    const card = document.createElement('div');
+    card.className='card'; card.dataset.catIdx=idx;
+    card.innerHTML=`
+      <div class="card-img-wrap" onclick="openModal('${cat.id}',${idx},0)">
+        ${badgeHtml(tipo)}${imgHtml}
+      </div>
+      <div class="card-body">
+        <div class="card-code" id="cc-${cat.id}-${idx}">${mv.code}</div>
+        <div class="card-name" id="cn-${cat.id}-${idx}">${mv.nombre||p.name}</div>
+        ${colored.length>1?`<div class="card-variants">${dots}</div>`:''}
+        <div class="card-footer">
+          ${priceHtml}
+          <div class="card-actions">
+            <button class="btn-detail" onclick="openModal('${cat.id}',${idx},0)">Ver</button>
+            <button class="btn-add" onclick="addToCart('${cat.id}',${idx},0)">+ Cotizar</button>
+          </div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  document.getElementById('resultsCount').textContent=`${shown} producto${shown!==1?'s':''}`;
+  empty.style.display = shown===0?'block':'none';
+}
+
+// ── Variant switch (card) ─────────────────────────────────────────────────
+function switchVariant(e, catId, prodIdx, varIdx) {
+  e.stopPropagation();
+  const cat = ALL_CATS.find(c=>c.id===catId);
+  const p   = cat.products[prodIdx];
+  const v   = p.variants.filter(x=>x.color!==null)[varIdx];
+  const imgEl = document.getElementById(`ci-${catId}-${prodIdx}`);
+  if (imgEl && v.file) {
+    imgEl.outerHTML=`<img id="ci-${catId}-${prodIdx}" src="${IMG_BASE}${v.file}" alt="" style="width:100%;height:100%;object-fit:contain;padding:14px;display:block"/>`;
+  }
+  const priceEl=document.getElementById(`cp-${catId}-${prodIdx}`);
+  if (priceEl && v.precio) priceEl.textContent=fmt(v.precio);
+  const codeEl=document.getElementById(`cc-${catId}-${prodIdx}`);
+  if (codeEl) codeEl.textContent=v.code;
+  const nameEl=document.getElementById(`cn-${catId}-${prodIdx}`);
+  if (nameEl && v.nombre) nameEl.textContent=v.nombre;
+  const card=document.querySelector(`[data-cat-idx="${prodIdx}"]`);
+  if (card) card.querySelectorAll('.variant-dot').forEach((d,i)=>d.classList.toggle('active',i===varIdx));
+  // update "Cotizar" to use current variant
+  const addBtn=card?.querySelector('.btn-add');
+  if (addBtn) addBtn.onclick=()=>addToCart(catId,prodIdx,varIdx);
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function openModal(catId, prodIdx, varIdx) {
+  currentModalProd={catId,prodIdx}; currentModalVariant=varIdx;
+  renderModal();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function renderModal() {
+  const cat=ALL_CATS.find(c=>c.id===currentModalProd.catId);
+  const p=cat.products[currentModalProd.prodIdx];
+  const colored=p.variants.filter(v=>v.color!==null);
+  const v=colored[currentModalVariant]||colored[0];
+  const tipo=v.tipo||p.tipo||'';
+  const allImgs=v.file?[v.file,...p.extra_images.filter(f=>f.startsWith(v.code+'_'))]:[];
+  const thumbs=allImgs.map((f,i)=>
+    `<img src="${IMG_BASE}${f}" class="modal-thumb${i===0?' active':''}" onclick="switchModalImg(this,'${IMG_BASE}${f}')"/>`
+  ).join('');
+  const varBtns=colored.map((cv,ci)=>
+    `<div class="modal-variant-btn${ci===currentModalVariant?' active':''}" onclick="switchModalVariant(${ci})">
+      <div class="modal-variant-dot" style="background:${cv.hex};${cv.hex==='#e8e8e8'?'box-shadow:inset 0 0 0 1px #ccc':''}"></div>
+      ${cv.label}
+    </div>`
+  ).join('');
+  const mainMedia=v.file
+    ?`<img class="modal-main-img" id="modalMainImg" src="${IMG_BASE}${v.file}" alt=""/>`
+    :`<div class="modal-main-ph" id="modalMainImg"><span style="font-size:64px;opacity:.2">${cat.icon}</span><p style="color:var(--muted);font-size:12px">Foto próximamente</p></div>`;
+  const phNotice=cat.real?'':`<div class="modal-ph-notice">⚠️ Datos de demostración — nombre, precio e imagen son referenciales.</div>`;
+
+  document.getElementById('modalContent').innerHTML=`
+    <div class="modal-gallery">
+      ${mainMedia}
+      ${thumbs?`<div class="modal-thumbs">${thumbs}</div>`:''}
+    </div>
+    <div class="modal-info">
+      <div class="modal-badge">${badgeHtml(tipo)}</div>
+      ${phNotice}
+      <div class="modal-code">${v.code}</div>
+      <div class="modal-name">${v.nombre||p.name}</div>
+      <div class="modal-price">${v.precio?fmt(v.precio):'Consultar precio'}</div>
+      <div class="modal-price-label">Precio base MXN${cat.real?' — LAB Guadalajara':' (referencial)'}</div>
+      <hr class="divider"/>
+      ${colored.length>1?`<div class="modal-section-title">Colores disponibles</div><div class="modal-variants">${varBtns}</div>`:''}
+      <hr class="divider"/>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">
+        Producto personalizable con tu marca. Mínimos de producción aplican.
+        Consulta tiempos de entrega con tu ejecutivo de Canvas Media.
+      </p>
+      <div class="modal-actions">
+        <button class="modal-btn-detail" onclick="closeModalBtn()">Cerrar</button>
+        <button class="modal-btn-add" onclick="addToCart(currentModalProd.catId,currentModalProd.prodIdx,currentModalVariant);closeModalBtn()">
+          + Agregar a cotización
+        </button>
+      </div>
+    </div>`;
+}
+
+function switchModalImg(thumb,src){
+  const el=document.getElementById('modalMainImg');
+  if(el?.tagName==='IMG') el.src=src;
+  document.querySelectorAll('.modal-thumb').forEach(t=>t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+function switchModalVariant(varIdx){
+  currentModalVariant=varIdx;
+  const cat=ALL_CATS.find(c=>c.id===currentModalProd.catId);
+  const p=cat.products[currentModalProd.prodIdx];
+  const colored=p.variants.filter(v=>v.color!==null);
+  const v=colored[varIdx];
+  const allImgs=v.file?[v.file,...p.extra_images.filter(f=>f.startsWith(v.code+'_'))]:[];
+  const thumbs=document.querySelector('.modal-thumbs');
+  if(thumbs) thumbs.innerHTML=allImgs.map((f,i)=>`<img src="${IMG_BASE}${f}" class="modal-thumb${i===0?' active':''}" onclick="switchModalImg(this,'${IMG_BASE}${f}')"/>`).join('');
+  const mainEl=document.getElementById('modalMainImg');
+  if(mainEl&&v.file){if(mainEl.tagName==='IMG')mainEl.src=IMG_BASE+v.file;else mainEl.outerHTML=`<img class="modal-main-img" id="modalMainImg" src="${IMG_BASE}${v.file}" alt=""/>`;}
+  const nameEl=document.querySelector('.modal-name');
+  const codeEl=document.querySelector('.modal-code');
+  const priceEl=document.querySelector('.modal-price');
+  if(nameEl) nameEl.textContent=v.nombre||p.name;
+  if(codeEl) codeEl.textContent=v.code;
+  if(priceEl) priceEl.textContent=v.precio?fmt(v.precio):'Consultar precio';
+  document.querySelectorAll('.modal-variant-btn').forEach((b,i)=>b.classList.toggle('active',i===varIdx));
+}
+
+function closeModal(e){if(e.target===document.getElementById('modalOverlay'))closeModalBtn();}
+function closeModalBtn(){document.getElementById('modalOverlay').classList.remove('open');document.body.style.overflow='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModalBtn();closeCart();}});
+
+// ── Controls ──────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input',e=>{currentSearch=e.target.value;renderGrid();});
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); currentFilter=btn.dataset.filter; renderGrid();
+  });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+buildSidebar(); updateHero(); renderGrid();
+</script>
+</body>
+</html>
